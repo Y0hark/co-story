@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-primary: #18181b; /* charcoal-900 (approx) */
+  --color-bg-secondary: #27272a; /* charcoal-800 */
+  --color-text-primary: #f4f4f5; /* zinc-100 */
+  --color-text-secondary: #a1a1aa; /* zinc-400 */
+  --color-accent: #2dd4bf; /* teal-400 */
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: 'Inter', sans-serif;
+}
