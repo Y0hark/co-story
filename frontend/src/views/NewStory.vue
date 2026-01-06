@@ -91,6 +91,16 @@
         <!-- Guided Form Fields -->
         <div v-if="config.mode === 'guided'" class="space-y-6 bg-white p-8 rounded-xl border border-stone-200 shadow-sm">
             <div>
+                <label class="block text-sm font-medium text-stone-700 mb-2">Story Title</label>
+                <input 
+                    v-model="config.title"
+                    type="text"
+                    class="w-full rounded-lg border-stone-200 bg-stone-50 p-3 text-stone-900 focus:border-teal-500 focus:ring-teal-500"
+                    placeholder="The Chronicles of..."
+                />
+            </div>
+            
+            <div>
                 <label class="block text-sm font-medium text-stone-700 mb-2">Story Concept / Topic</label>
                 <textarea 
                     v-model="config.topic"
@@ -103,22 +113,28 @@
             <div class="grid grid-cols-2 gap-6">
                  <div>
                     <label class="block text-sm font-medium text-stone-700 mb-2">Genre / Theme</label>
-                    <select v-model="config.genre" class="w-full rounded-lg border-stone-200 bg-stone-50 p-2.5 text-stone-900 focus:border-teal-500 focus:ring-teal-500">
-                        <option>Sci-Fi</option>
-                        <option>Fantasy</option>
-                        <option>Mystery</option>
-                        <option>Romance</option>
-                        <option>Non-Fiction</option>
-                    </select>
+                    <BaseSelect 
+                        v-model="config.genre"
+                        :options="[
+                            { label: 'Sci-Fi', value: 'Sci-Fi' },
+                            { label: 'Fantasy', value: 'Fantasy' },
+                            { label: 'Mystery', value: 'Mystery' },
+                            { label: 'Romance', value: 'Romance' },
+                            { label: 'Non-Fiction', value: 'Non-Fiction' }
+                        ]"
+                    />
                 </div>
                  <div>
                     <label class="block text-sm font-medium text-stone-700 mb-2">Tone / Style</label>
-                    <select v-model="config.tone" class="w-full rounded-lg border-stone-200 bg-stone-50 p-2.5 text-stone-900 focus:border-teal-500 focus:ring-teal-500">
-                        <option>Dark & Gritty</option>
-                        <option>Light & Humorous</option>
-                        <option>Formal & Academic</option>
-                        <option>Poetic & Lyrical</option>
-                    </select>
+                    <BaseSelect 
+                        v-model="config.tone"
+                        :options="[
+                            { label: 'Dark & Gritty', value: 'Dark & Gritty' },
+                            { label: 'Light & Humorous', value: 'Light & Humorous' },
+                            { label: 'Formal & Academic', value: 'Formal & Academic' },
+                            { label: 'Poetic & Lyrical', value: 'Poetic & Lyrical' }
+                        ]"
+                    />
                 </div>
             </div>
         </div>
@@ -180,12 +196,14 @@
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { Sparkles, FileText, Upload, ArrowLeft, Bot, HeartHandshake, Lock } from 'lucide-vue-next'
+import BaseSelect from '../components/ui/BaseSelect.vue'
 
 const router = useRouter()
 const step = ref(1)
 
 const config = reactive({
     mode: '', // 'guided', 'blank', 'import', 'journaling'
+    title: '',
     topic: '',
     genre: 'Sci-Fi',
     tone: 'Dark & Gritty',
@@ -221,12 +239,26 @@ const selectMode = (mode: string) => {
     }
 }
 
-const createStory = () => {
-    // In a real app, we would send 'config' to the backend here.
-    console.log("Creating story with config:", config)
-    
-    // Simulate creation and redirect to Studio
-    router.push('/app/studio')
+const createStory = async () => {
+    try {
+        const response = await fetch('http://localhost:3001/api/stories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        })
+        
+        if (!response.ok) throw new Error('Failed to create story')
+        
+        const data = await response.json()
+        console.log("Story created:", data)
+        
+        // Redirect to Studio with the new Story ID
+        // Note: Studio needs to support :id param
+        router.push(`/app/studio/${data.id}`)
+    } catch (e) {
+        console.error(e)
+        alert('Error creating story. Please check console.')
+    }
 }
 </script>
 

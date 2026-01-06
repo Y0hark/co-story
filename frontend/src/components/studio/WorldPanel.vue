@@ -125,14 +125,26 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router' // Import useRoute
 import { Globe, User, MapPin, BookOpen, Box, MoreHorizontal } from 'lucide-vue-next'
 
-// Mock for now, would fetch from API
-const items = ref<any[]>([
-    { id: 1, name: 'Elias Thorne', type: 'character', description: 'A cynical detective with a mechanical arm.' },
-    { id: 2, name: 'The Rusty Anchor', type: 'location', description: 'A seedy bar in the lower district where information is traded.' },
-    { id: 3, name: 'The Great Fire', type: 'event', description: 'The event that destroyed the old city 50 years ago.' }
-])
+const route = useRoute()
+const storyId = computed(() => route.params.id as string)
+const items = ref<any[]>([])
+
+const loadItems = async () => {
+    if (!storyId.value) return
+    try {
+        const res = await fetch(`http://localhost:3001/api/stories/${storyId.value}/world`)
+        items.value = await res.json()
+    } catch (e) {
+        console.error("Failed to load world items", e)
+    }
+}
+
+onMounted(() => {
+    loadItems()
+})
 
 const isCreating = ref(false)
 const newItem = reactive({
@@ -198,19 +210,24 @@ onUnmounted(() => {
 })
 
 const createItem = async () => {
-    // In real implementation: POST to API
-    items.value.unshift({
-        id: Date.now(),
-        name: newItem.name,
-        type: newItem.type,
-        description: newItem.description
-    })
-    
-    // Reset
-    newItem.name = ''
-    newItem.type = 'character'
-    newItem.description = ''
-    isCreating.value = false
+    if (!storyId.value) return
+    try {
+        const res = await fetch(`http://localhost:3001/api/stories/${storyId.value}/world`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(newItem)
+        })
+        const savedItem = await res.json()
+        items.value.unshift(savedItem)
+
+        // Reset
+        newItem.name = ''
+        newItem.type = 'character'
+        newItem.description = ''
+        isCreating.value = false
+    } catch (e) {
+        console.error("Failed to create item", e)
+    }
 }
 
 // TODO: loadItems() from API onMounted

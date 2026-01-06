@@ -25,6 +25,12 @@ export class AuthController {
                 [email, hashedPassword, name]
             );
 
+            // Create default "Saved" library for the user
+            await pool.query(
+                "INSERT INTO reading_lists (user_id, name, is_public) VALUES ($1, 'Saved', false)",
+                [newUser.rows[0].id]
+            );
+
             // Create JWT
             const token = jwt.sign(
                 { id: newUser.rows[0].id, email: newUser.rows[0].email },

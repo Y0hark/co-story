@@ -1,24 +1,38 @@
 <template>
   <div class="min-h-screen bg-[#FDFBF7] text-stone-900 font-sans selection:bg-teal-100/50">
-    <Sidebar />
+    <Navbar_Floating />
     
-    <main class="ml-64 min-h-screen">
-        <!-- Top bar or header could go here if needed -->
-        <header class="h-16 border-b border-stone-200 flex items-center justify-between px-8 bg-[#FDFBF7]/80 backdrop-blur-sm sticky top-0 z-10">
-            <div class="flex items-center gap-4">
-                <!-- Breadcrumbs or page title -->
-                <h2 class="text-sm font-medium text-stone-500 font-serif italic">{{ $route.meta.title || 'Overview' }}</h2>
-            </div>
-            
-            <div class="flex items-center gap-4">
-               <!-- User profile small or notifications -->
-               <div class="w-8 h-8 rounded-full bg-stone-200 border border-stone-300 flex items-center justify-center text-xs font-serif font-bold text-stone-600">
-                 F
-               </div>
+      <main class="min-h-screen pb-24 md:pb-0">
+        <header class="hidden md:flex h-20 items-center justify-between px-10 bg-gradient-to-b from-[#FDFBF7] to-[#FDFBF7]/90 backdrop-blur-sm sticky top-0 z-10 transition-all duration-300">
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity cursor-default group">
+                    <div class="p-2 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100/50 border border-teal-100/50 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                        <Feather class="w-5 h-5 text-teal-700" stroke-width="2.5" />
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-stone-900 tracking-tight leading-none font-serif">CoStory</h1>
+                        <span class="text-[10px] font-medium text-teal-600/80 tracking-widest uppercase ml-0.5">Studio</span>
+                    </div>
+                </div>
+                
+                <div class="h-8 w-px bg-stone-200/50 mx-2"></div>
+                
+                <!-- Page Title / Context -->
+                <h2 class="text-stone-500 font-serif text-lg italic animate-fade-in">
+                    {{ $route.meta.title || 'Overview' }}
+                </h2>
             </div>
         </header>
 
-      <div class="p-8">
+        <!-- Mobile Header -->
+        <header class="md:hidden flex items-center justify-between px-4 py-4 bg-[#FDFBF7]/90 backdrop-blur-sm sticky top-0 z-10">
+             <div class="flex items-center gap-2">
+                 <Feather class="w-5 h-5 text-teal-700" stroke-width="2.5" />
+                 <h1 class="text-lg font-bold text-stone-900 font-serif">CoStory</h1>
+             </div>
+        </header>
+
+      <div :class="$route.name === 'Studio' ? 'p-0' : 'p-4 md:p-8'">
         <router-view v-slot="{ Component }">
           <transition 
             enter-active-class="transition ease-out duration-200"
@@ -38,5 +52,6 @@
 </template>
 
 <script setup lang="ts">
-import Sidebar from '../components/layout/Sidebar.vue'
+import Navbar_Floating from '../components/layout/Navbar_Floating.vue'
+import { Feather } from 'lucide-vue-next'
 </script>

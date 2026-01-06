@@ -59,6 +59,12 @@ const router = createRouter({
                     name: 'Reader',
                     component: () => import('../views/Reader.vue'),
                     meta: { title: 'Reading Mode' }
+                },
+                {
+                    path: 'library',
+                    name: 'Library',
+                    component: () => import('../views/Library.vue'),
+                    meta: { title: 'My Library' }
                 }
             ]
         }
