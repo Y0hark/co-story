@@ -64,7 +64,7 @@
         <!-- Option 4: Therapeutic / Journaling -->
         <div 
             class="bg-stone-50 border border-stone-200 rounded-xl p-6 hover:border-amber-500/50 hover:bg-amber-50/50 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden"
-             @click="selectMode('journaling')"
+             @click="selectMode('journal')"
         >
              <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <HeartHandshake class="w-24 h-24 text-amber-600" />
@@ -83,7 +83,7 @@
     <div v-else-if="step === 2" class="max-w-2xl mx-auto space-y-8 animate-fade-in-up">
         
         <!-- Private Mode Indicator -->
-        <div v-if="config.mode === 'journaling'" class="p-4 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-3 text-amber-800 text-sm">
+        <div v-if="config.mode === 'journal'" class="p-4 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-3 text-amber-800 text-sm">
             <Lock class="w-5 h-5 flex-shrink-0" />
             <span><strong>Private Session:</strong> This content is encrypted and will strictly never be published or shared.</span>
         </div>
@@ -156,37 +156,37 @@
             </h3>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div v-if="config.mode !== 'journaling'"
+                <div v-if="config.mode !== 'journal'"
                     class="p-4 rounded-lg border-2 cursor-pointer transition-all"
                     :class="config.aiRole === 'writer' ? 'border-teal-500 bg-teal-50' : 'border-stone-100 hover:border-stone-300'"
                     @click="config.aiRole = 'writer'"
                 >
-                    <div class="font-bold text-stone-900 mb-1">Co-Writer</div>
+                    <div class="font-bold text-stone-900 mb-1">Kai • Co-Writer</div>
                     <p class="text-xs text-stone-500">I'll provide milestones, you write the content. I fill in the blanks.</p>
                 </div>
 
-                <div v-if="config.mode !== 'journaling'"
+                <div v-if="config.mode !== 'journal'"
                     class="p-4 rounded-lg border-2 cursor-pointer transition-all"
                     :class="config.aiRole === 'editor' ? 'border-teal-500 bg-teal-50' : 'border-stone-100 hover:border-stone-300'"
                     @click="config.aiRole = 'editor'"
                 >
-                    <div class="font-bold text-stone-900 mb-1">Editor & Assistant</div>
+                    <div class="font-bold text-stone-900 mb-1">Nora • Editor</div>
                     <p class="text-xs text-stone-500">I write the draft. You correct grammar, polish tone, and fix consistency.</p>
                 </div>
 
-                <div v-if="config.mode === 'journaling'"
+                <div v-if="config.mode === 'journal'"
                     class="p-4 rounded-lg border-2 border-amber-500 bg-amber-50 cursor-pointer transition-all col-span-2"
                     @click="config.aiRole = 'therapist'"
                 >
-                    <div class="font-bold text-stone-900 mb-1">Empathetic Partner</div>
+                    <div class="font-bold text-stone-900 mb-1">Sofia • Empathetic Partner</div>
                     <p class="text-xs text-stone-500">I listen without judgement, ask reflective questions, and help you process your thoughts. I never judge or critique.</p>
                 </div>
             </div>
         </div>
 
-        <button @click="createStory" class="w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2" :class="config.mode === 'journaling' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-700 hover:bg-teal-800'">
+        <button @click="createStory" class="w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2" :class="config.mode === 'journal' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-700 hover:bg-teal-800'">
             <Sparkles class="w-5 h-5" />
-            {{ config.mode === 'journaling' ? 'Start Private Journal' : 'Create Story' }}
+            {{ config.mode === 'journal' ? 'Start Private Journal' : 'Create Story' }}
         </button>
     </div>
   </div>
@@ -202,7 +202,7 @@ const router = useRouter()
 const step = ref(1)
 
 const config = reactive({
-    mode: '', // 'guided', 'blank', 'import', 'journaling'
+    mode: '', // 'guided', 'blank', 'import', 'journal'
     title: '',
     topic: '',
     genre: 'Sci-Fi',
@@ -227,7 +227,7 @@ const selectMode = (mode: string) => {
     step.value = 2
     
     // Set defaults based on mode
-    if (mode === 'journaling') {
+    if (mode === 'journal') {
         config.aiRole = 'therapist'
         config.isPrivate = true
         config.tone = 'Reflective'

@@ -1,12 +1,13 @@
 <template>
   <div class="flex flex-col h-full bg-white relative">
-    <div class="p-3 border-b border-stone-200 bg-gradient-to-r from-teal-50 to-amber-50 shrink-0">
+    <div class="p-3 border-b border-stone-200 shrink-0 transition-colors duration-500" :class="currentTheme.headerGradient">
         <div class="flex items-center justify-between">
-            <h2 class="font-bold font-serif text-teal-900 flex items-center gap-2 text-sm">
-                <Sparkles class="w-4 h-4 text-teal-600" />
-                AI Assistant
+            <h2 class="font-bold font-serif flex items-center gap-2 text-sm transition-colors duration-500" :class="currentTheme.headerText">
+                <Sparkles class="w-4 h-4" />
+                <span>{{ currentModeLabel }}</span>
+                <span class="text-[10px] font-sans uppercase tracking-wider font-normal opacity-70">{{ currentModeTag }}</span>
             </h2>
-            <div class="h-2 w-2 rounded-full bg-teal-500 animate-pulse" v-if="isAiThinking"></div>
+            <div class="h-2 w-2 rounded-full animate-pulse transition-colors duration-500" :class="currentTheme.accentBg" v-if="isAiThinking"></div>
         </div>
     </div>
     
@@ -17,24 +18,27 @@
             <p class="text-sm px-4">Select a mode and ask me anything to help with your story.</p>
         </div>
         
-        <div v-for="(msg, idx) in localMessages" :key="idx" 
-            class="flex flex-col gap-1 max-w-[90%]"
-            :class="msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'"
-        >
-            <div 
-                class="p-3 rounded-2xl text-sm shadow-sm prose prose-sm max-w-none"
-                :class="[
-                    msg.role === 'user' 
-                        ? 'bg-teal-600 text-white rounded-tr-sm prose-headings:text-white prose-p:text-white prose-strong:text-white prose-ul:text-white prose-ol:text-white' 
-                        : 'bg-white text-stone-800 border border-stone-100 rounded-tl-sm prose-headings:text-stone-900',
-                    'prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0'
-                ]"
+        <TransitionGroup name="message-list">
+            <div v-for="(msg, idx) in localMessages" :key="idx" 
+                class="flex flex-col gap-1 max-w-[90%]"
+                :class="msg.role === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'"
             >
-                <div v-if="msg.role === 'user'" class="whitespace-pre-wrap">{{ msg.content }}</div>
-                <div v-else v-html="renderMarkdown(msg.content)"></div>
+                <div 
+                    class="p-3 rounded-2xl text-sm shadow-sm prose prose-sm max-w-none transition-colors duration-300"
+                    :class="[
+                        msg.role === 'user' 
+                            ? [currentTheme.primaryBg, 'text-white rounded-tr-sm prose-headings:text-white prose-p:text-white prose-strong:text-white prose-ul:text-white prose-ol:text-white'] 
+                            : 'bg-white text-stone-800 border border-stone-100 rounded-tl-sm prose-headings:text-stone-900',
+                        'prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0'
+                    ]"
+                >
+                    <div v-if="msg.role === 'user'" class="whitespace-pre-wrap">{{ msg.content }}</div>
+                    <div v-else v-html="renderMarkdown(msg.content)"></div>
+                </div>
             </div>
-        </div>
-            <div v-if="isAiThinking" class="flex gap-1 ml-2">
+        </TransitionGroup>
+
+        <div v-if="isAiThinking" class="flex gap-1 ml-2">
             <div class="w-2 h-2 bg-stone-300 rounded-full animate-bounce"></div>
             <div class="w-2 h-2 bg-stone-300 rounded-full animate-bounce delay-75"></div>
             <div class="w-2 h-2 bg-stone-300 rounded-full animate-bounce delay-150"></div>
@@ -62,7 +66,7 @@
                 @click="showModeMenu = !showModeMenu"
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 hover:bg-stone-200 text-xs font-medium text-stone-700 transition-colors"
             >
-                <span class="w-1.5 h-1.5 rounded-full" :class="currentModeColor"></span>
+                <span class="w-1.5 h-1.5 rounded-full transition-colors duration-300" :class="currentTheme.accentBg"></span>
                 {{ currentModeLabel }}
                 <ChevronDown class="w-3 h-3 text-stone-400" />
             </button>
@@ -77,9 +81,9 @@
                     :key="mode.value"
                     @click="setMode(mode.value)"
                     class="w-full text-left px-3 py-2 text-xs hover:bg-stone-50 flex items-center gap-2"
-                    :class="localMode === mode.value ? 'font-medium text-teal-700 bg-teal-50/50' : 'text-stone-600'"
+                    :class="localMode === mode.value ? 'font-medium bg-stone-50' : 'text-stone-600'"
                 >
-                    <span class="w-1.5 h-1.5 rounded-full" :class="getModeColor(mode.value)"></span>
+                    <span class="w-1.5 h-1.5 rounded-full" :class="getThemeForMode(mode.value).accentBg"></span>
                     {{ mode.label }}
                     <Check v-if="localMode === mode.value" class="w-3 h-3 ml-auto text-teal-600" />
                 </button>
@@ -95,12 +99,14 @@
                 v-model="aiInput"
                 @keydown.enter="triggerSend"
                 placeholder="Ask Co-Story..." 
-                class="w-full pl-4 pr-10 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none placeholder:text-stone-400"
+                class="w-full pl-4 pr-10 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm outline-none placeholder:text-stone-400 transition-colors duration-300"
+                :class="[currentTheme.focusBorder, currentTheme.focusRing]"
                 :disabled="isAiThinking"
             />
             <button 
                 @click="triggerSend"
-                class="absolute right-2 top-2 p-1 rounded-md text-teal-600 hover:bg-teal-50 transition-colors disabled:opacity-50"
+                class="absolute right-2 top-2 p-1 rounded-md transition-colors disabled:opacity-50"
+                :class="[currentTheme.accentText, 'hover:bg-stone-100']"
                 :disabled="!aiInput.trim() || isAiThinking"
             >
                 <Send class="w-4 h-4" />
@@ -128,16 +134,48 @@ const renderMarkdown = (text: string) => {
 const props = defineProps<{
     context?: any
     selection?: string
+    storyMode?: string
 }>()
 
-const aiModes = [
-    { label: 'Narrative Coach', value: 'narrative' },
-    { label: 'Therapist', value: 'therapeutic' },
-    { label: 'Co-Author', value: 'coauthor' },
-    { label: 'Structural', value: 'structural' }
+const allAiModes = [
+    { label: 'Atlas', tag: 'Narrative Coach', value: 'narrative' },
+    { label: 'Sofia', tag: 'Empathetic Partner', value: 'therapeutic' },
+    { label: 'Kai', tag: 'Co-Author', value: 'coauthor' },
+    { label: 'Nora', tag: 'Structural Editor', value: 'structural' }
 ]
 
+const aiModes = computed(() => {
+    // If story mode is journal, only show therapeutic or allow it.
+    // Spec: "Therapeutic" NOT accessible UNLESS created via Journal.
+    
+    // If it's a journal, maybe we limit to ONLY therapeutic or prioritize it?
+    // Let's assume:
+    // 1. If storyMode === 'journal', show 'Therapeutic' (and maybe others or just that?)
+    // 2. If storyMode !== 'journal', FILTER OUT 'Therapeutic'
+    
+    if (props.storyMode === 'journal') {
+        // Just show all? Or usually journals imply therapeutic focus. 
+        // User said: "only way to arrive [at Therapeutic] is by passing through creation of a journal"
+        // So Journal -> Therapeutic available.
+        // Others -> Therapeutic HIDDEN.
+        
+        // Spec update: "remove the other assistants in the Private mode as well leaving just the epathetic partner"
+        return [{ label: 'Sofia', tag: 'Empathetic Partner', value: 'therapeutic' }]
+    } else {
+        return allAiModes.filter(m => m.value !== 'therapeutic')
+    }
+})
+
 const localMode = ref('narrative')
+
+// Watch story mode to auto-switch if needed
+watch(() => props.storyMode, (newMode) => {
+    if (newMode === 'journal') {
+        localMode.value = 'therapeutic'
+    } else if (localMode.value === 'therapeutic') {
+        localMode.value = 'narrative'
+    }
+}, { immediate: true })
 const localMessages = ref<{ role: 'user' | 'assistant', content: string }[]>([])
 const aiInput = ref('')
 const isAiThinking = ref(false)
@@ -145,18 +183,66 @@ const chatContainer = ref<HTMLElement | null>(null)
 
 const showModeMenu = ref(false)
 
-const getModeColor = (mode: string) => {
+const getThemeForMode = (mode: string) => {
     switch(mode) {
-        case 'narrative': return 'bg-teal-500'
-        case 'therapeutic': return 'bg-amber-500'
-        case 'coauthor': return 'bg-purple-500'
-        case 'structural': return 'bg-blue-500'
-        default: return 'bg-stone-500'
+        case 'narrative': // Atlas (Teal)
+            return {
+                headerGradient: 'bg-gradient-to-r from-teal-50 to-emerald-50',
+                headerText: 'text-teal-900',
+                accentBg: 'bg-teal-500',
+                accentText: 'text-teal-600',
+                primaryBg: 'bg-teal-600',
+                focusBorder: 'focus:border-teal-500',
+                focusRing: 'focus:ring-teal-500 focus:ring-1'
+            }
+        case 'therapeutic': // Sofia (Amber/Rose)
+            return {
+                headerGradient: 'bg-gradient-to-r from-amber-50 to-rose-50',
+                headerText: 'text-amber-900',
+                accentBg: 'bg-amber-500',
+                accentText: 'text-amber-600',
+                primaryBg: 'bg-amber-600',
+                focusBorder: 'focus:border-amber-500',
+                focusRing: 'focus:ring-amber-500 focus:ring-1'
+            }
+        case 'coauthor': // Kai (Violet/Fuchsia)
+            return {
+                headerGradient: 'bg-gradient-to-r from-violet-50 to-fuchsia-50',
+                headerText: 'text-violet-900',
+                accentBg: 'bg-violet-500',
+                accentText: 'text-violet-600',
+                primaryBg: 'bg-violet-600',
+                focusBorder: 'focus:border-violet-500',
+                focusRing: 'focus:ring-violet-500 focus:ring-1'
+            }
+        case 'structural': // Nora (Slate/Indigo)
+            return {
+                headerGradient: 'bg-gradient-to-r from-slate-100 to-indigo-50',
+                headerText: 'text-slate-900',
+                accentBg: 'bg-slate-600',
+                accentText: 'text-slate-700',
+                primaryBg: 'bg-slate-700',
+                focusBorder: 'focus:border-slate-500',
+                focusRing: 'focus:ring-slate-500 focus:ring-1'
+            }
+        default:
+            return {
+                headerGradient: 'bg-stone-50',
+                headerText: 'text-stone-900',
+                accentBg: 'bg-stone-500',
+                accentText: 'text-stone-600',
+                primaryBg: 'bg-stone-600',
+                focusBorder: 'focus:border-stone-500',
+                focusRing: 'focus:ring-stone-500 focus:ring-1'
+            }
     }
 }
 
-const currentModeColor = computed(() => getModeColor(localMode.value))
-const currentModeLabel = computed(() => aiModes.find(m => m.value === localMode.value)?.label)
+const currentTheme = computed(() => getThemeForMode(localMode.value))
+
+// const currentModeColor = computed(() => getModeColor(localMode.value)) // DEPRECATED
+const currentModeLabel = computed(() => aiModes.value.find(m => m.value === localMode.value)?.label || 'Atlas')
+const currentModeTag = computed(() => aiModes.value.find(m => m.value === localMode.value)?.tag || 'Assistant')
 
 const setMode = (mode: string) => {
     localMode.value = mode
@@ -242,3 +328,18 @@ const processMessage = async (msg: string) => {
     }
 }
 </script>
+
+<style scoped>
+.message-list-enter-active,
+.message-list-leave-active {
+  transition: all 0.4s ease;
+}
+.message-list-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.message-list-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+</style>

@@ -113,7 +113,7 @@
                 placeholder="Chapter Title"
                 class="flex-1 bg-transparent text-3xl font-serif font-bold text-stone-900 placeholder:text-stone-300 border-none outline-none focus:ring-0 px-0 mr-4"
             />
-            <div v-if="selectedChapter">
+            <div v-if="selectedChapter && story?.mode !== 'journal'">
                 <button 
                     @click="togglePublishChapter"
                     class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border"
@@ -143,7 +143,7 @@
 
         <!-- Right Sidebar: AI Tools (Bigger) -->
         <aside class="shrink-0 bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm transition-none" :style="{ width: rightSidebarWidth + 'px' }">
-             <AIChatPanel :context="aiContext" :selection="selectedText" />
+             <AIChatPanel :context="aiContext" :selection="selectedText" :story-mode="story?.mode" />
         </aside>
     </div>
 
