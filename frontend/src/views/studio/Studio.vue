@@ -14,7 +14,14 @@
             class="bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm min-h-[150px]"
             :style="{ height: leftSplitPercentage + '%' }"
         >
-            <div class="px-4 py-3 border-b border-stone-100 bg-stone-50">
+            <div class="px-4 py-3 border-b border-stone-100 bg-stone-50 relative">
+                <button 
+                    @click="router.push('/app/new-story')"
+                    class="absolute top-3 right-4 text-stone-400 hover:text-teal-600 transition-colors"
+                    title="Tell a new Story"
+                >
+                    <Feather class="w-4 h-4" />
+                </button>
                 <input 
                     v-if="story"
                     type="text" 
@@ -90,7 +97,7 @@
 
         <!-- Bottom: World Database -->
         <div class="flex-1 bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm min-h-[150px]">
-            <WorldPanel class="h-full" />
+            <WorldPanel ref="worldPanel" class="h-full" />
         </div>
 
         </aside>
@@ -129,7 +136,6 @@
         <Editor 
             v-model="currentChapterContent" 
             @editor-created="setEditor"
-            @request-ai-edit="handleAiEditRequest"
         />
         </main>
 
@@ -143,7 +149,13 @@
 
         <!-- Right Sidebar: AI Tools (Bigger) -->
         <aside class="shrink-0 bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm transition-none" :style="{ width: rightSidebarWidth + 'px' }">
-             <AIChatPanel :context="aiContext" :selection="selectedText" :story-mode="story?.mode" />
+             <div class="border-b border-stone-100 p-2 flex justify-end bg-stone-50" v-if="contentHistory.length > 0">
+                <button @click="undoLastChange" class="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-900 px-2 py-1 rounded hover:bg-stone-200 transition-colors" title="Undo AI Change">
+                    <RotateCcw class="w-3 h-3" />
+                    Undo
+                </button>
+             </div>
+             <AIChatPanel :context="aiContext" :story-mode="story?.mode" @ai-action="handleAiAction" />
         </aside>
     </div>
 
@@ -177,7 +189,6 @@
                     <Editor 
                         v-model="currentChapterContent" 
                         @editor-created="setEditor"
-                        @request-ai-edit="handleAiEditRequest"
                     />
                 </div>
             </div>
@@ -192,6 +203,13 @@
                         class="w-full bg-transparent font-serif font-bold text-stone-900 border-none outline-none focus:ring-0 px-0 text-lg mb-2"
                         placeholder="Story Title..."
                     />
+                    <button 
+                        @click="router.push('/app/new-story')"
+                        class="mb-4 flex items-center gap-2 text-stone-500 hover:text-teal-600 transition-colors text-xs font-medium"
+                    >
+                        <Feather class="w-3 h-3" />
+                        <span>Tell a new Story</span>
+                    </button>
                      <div v-if="story" class="flex items-center gap-2 mb-2">
                         <span class="text-[10px] text-stone-400 uppercase tracking-widest font-bold">Status:</span>
                         <BaseSelect 
@@ -238,7 +256,7 @@
 
             <!-- 4. AI Panel -->
             <div v-if="activeTab === 'ai'" class="h-full flex flex-col">
-                <AIChatPanel :context="aiContext" :selection="selectedText" />
+                <AIChatPanel :context="aiContext" />
             </div>
             
         </div>
@@ -270,13 +288,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Sparkles, List, PenTool, Globe } from 'lucide-vue-next'
+import { Plus, Sparkles, List, PenTool, Globe, Feather, RotateCcw } from 'lucide-vue-next'
 import Editor from '../../components/editor/Editor.vue'
 import WorldPanel from '../../components/studio/WorldPanel.vue'
 import BaseSelect from '../../components/ui/BaseSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
+const worldPanel = ref()
 
 // Mobile State
 const activeTab = ref<string>('editor')
@@ -346,7 +365,7 @@ const selectedChapterId = ref<string | number | null>(null)
 import AIChatPanel from '@/components/studio/AIChatPanel.vue'
 
 // AI State
-const selectedText = ref('')
+
 
 // AI Context
 const aiContext = computed(() => ({
@@ -355,21 +374,7 @@ const aiContext = computed(() => ({
     status: story.value?.status
 }))
 
-const handleAiEditRequest = (selection: any) => {
-    // Tiptap selection object: { from, to, empty }
-    if (!editorInstance.value) return
-    
-    const { from, to, empty } = selection
-    if (empty) return
-    
-    const text = editorInstance.value.state.doc.textBetween(from, to, ' ')
-    selectedText.value = text
-    
-    // Mobile: Switch tab
-    if (window.innerWidth < 768) {
-        activeTab.value = 'ai'
-    }
-}
+
 
 // Editor instance
 const editorInstance = ref<any>(null)
@@ -487,20 +492,106 @@ const saveChapter = async () => {
     }
 }
 
-const createChapter = async () => {
+const createChapter = async (initialData: any = {}) => {
     try {
         const res = await fetch('http://localhost:3001/api/chapters', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ storyId: storyId.value })
+            body: JSON.stringify({ storyId: storyId.value, ...initialData })
         })
         if (!res.ok) throw new Error("Failed to create chapter")
         
         const newChapter = await res.json()
         chapters.value.push(newChapter)
+        
+        // If content provided, update it immediately (since API might only take title/storyId)
+        if (initialData.content) {
+             // We need to update the newly created chapter with content
+             // Optimistic update locally
+             newChapter.content = initialData.content
+             // Persist
+             await fetch(`http://localhost:3001/api/chapters/${newChapter.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: initialData.content })
+            })
+        }
+
         selectedChapterId.value = newChapter.id
     } catch (e) {
-        console.error("Failed to create chapter", e)
+    }
+}
+
+// --- History / Undo ---
+const contentHistory = ref<string[]>([])
+
+const pushHistory = () => {
+    if (selectedChapter.value) {
+        contentHistory.value.push(selectedChapter.value.content || '')
+        // Limit history size
+        if (contentHistory.value.length > 10) contentHistory.value.shift()
+    }
+}
+
+const undoLastChange = () => {
+    const prev = contentHistory.value.pop()
+    if (prev !== undefined && selectedChapter.value) {
+        selectedChapter.value.content = prev
+    }
+}
+
+const handleAiAction = async (action: any) => {
+    console.log("Processing AI Action:", action)
+    const { type, data } = action
+    
+    switch (type) {
+        case 'update_story_title':
+            if (story.value && data.title) {
+                story.value.title = data.title
+                // Watcher will save it
+            }
+            break;
+            
+        case 'update_chapter_title':
+            if (selectedChapter.value && data.title) {
+                selectedChapter.value.title = data.title
+                // Watcher will save it
+            }
+            break;
+
+        case 'update_chapter_content':
+            if (selectedChapter.value && data.content) {
+                pushHistory() // Save state before change
+                currentChapterContent.value = data.content 
+                // content watcher handles save
+            }
+            break;
+
+        case 'append_chapter_content':
+            if (selectedChapter.value && data.content) {
+                pushHistory() // Save state before change
+                const newContent = (currentChapterContent.value || '') + data.content
+                currentChapterContent.value = newContent
+            }
+            break;
+
+        case 'create_chapter':
+            if (data.title) {
+                await createChapter({ title: data.title, content: data.content })
+            }
+            break;
+
+        case 'create_world_entity':
+            if (worldPanel.value && data.name && data.type) {
+                worldPanel.value.createItem(data)
+            }
+            break;
+
+        case 'update_world_entity':
+            if (worldPanel.value && data.id) {
+                worldPanel.value.createItem(data)
+            }
+            break;
     }
 }
 

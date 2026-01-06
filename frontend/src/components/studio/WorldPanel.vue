@@ -3,14 +3,14 @@
     <!-- Header / Tabs -->
     <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50 shrink-0">
       <h2 class="font-bold font-serif text-stone-900 flex items-center gap-2">
-         <Globe class="w-4 h-4 text-stone-600" />
-         World Database
+         <Book class="w-4 h-4 text-stone-600" />
+         Story Codex
       </h2>
       <button 
-        @click="isCreating = true"
+        @click="openCreate"
         class="text-xs bg-stone-900 text-stone-50 px-2 py-1 rounded hover:bg-stone-700 transition-colors"
       >
-        + Add
+        + Add Entry
       </button>
     </div>
 
@@ -52,16 +52,22 @@
         </div>
     </div>
 
-    <!-- Creation Form -->
-    <div v-if="isCreating" class="p-4 border-b border-stone-200 bg-stone-50 animate-fade-in shrink-0">
+    <!-- Editor Form (Create / Edit) -->
+    <div v-if="editingItem" class="p-4 border-b border-stone-200 bg-stone-50 animate-fade-in shrink-0">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-stone-400">
+                {{ editingItem.id ? 'Edit Entry' : 'New Entry' }}
+            </span>
+            <button v-if="editingItem.id" @click="deleteItem" class="text-xs text-red-400 hover:text-red-600">Delete</button>
+        </div>
         <div class="space-y-3">
             <input 
-                v-model="newItem.name"
+                v-model="editingItem.name"
                 class="w-full text-sm p-2 rounded border border-stone-300 focus:ring-1 focus:ring-teal-500 outline-none" 
                 placeholder="Name (e.g. John Doe, Neo-Tokyo)"
             />
             <select 
-                v-model="newItem.type"
+                v-model="editingItem.type"
                 class="w-full text-sm p-2 rounded border border-stone-300 focus:ring-1 focus:ring-teal-500 outline-none bg-white"
             >
                 <option value="character">Character</option>
@@ -71,7 +77,7 @@
                 <option value="other">Other</option>
             </select>
             <textarea 
-                v-model="newItem.description"
+                v-model="editingItem.description"
                 rows="3"
                 class="w-full text-sm p-2 rounded border border-stone-300 focus:ring-1 focus:ring-teal-500 outline-none resize-none"
                 placeholder="Description..."
@@ -79,13 +85,13 @@
             
             <div class="flex gap-2">
                 <button 
-                    @click="createItem"
+                    @click="saveItem"
                     class="flex-1 bg-teal-600 text-white text-xs py-1.5 rounded hover:bg-teal-700"
                 >
-                    Save
+                    {{ editingItem.id ? 'Update' : 'Save' }}
                 </button>
                 <button 
-                    @click="isCreating = false"
+                    @click="editingItem = null"
                     class="px-3 bg-stone-200 text-stone-600 text-xs py-1.5 rounded hover:bg-stone-300"
                 >
                     Cancel
@@ -96,13 +102,17 @@
 
     <!-- List -->
     <div class="flex-1 overflow-y-auto p-4 space-y-4">
-        <div v-if="filteredItems.length === 0 && !isCreating" class="text-center py-8 text-stone-400">
-            <Globe class="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p class="text-sm">No items found.</p>
+        <div v-if="filteredItems.length === 0 && !editingItem" class="text-center py-8 text-stone-400">
+            <Book class="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p class="text-sm">No entries yet.</p>
         </div>
 
         <div v-for="item in filteredItems" :key="item.id" class="group">
-            <div class="flex items-start gap-3 p-3 rounded-lg border border-stone-100 hover:border-stone-300 hover:bg-stone-50 transition-all cursor-pointer">
+            <div 
+                class="flex items-start gap-3 p-3 rounded-lg border border-stone-100 hover:border-stone-300 hover:bg-stone-50 transition-all cursor-pointer"
+                :class="editingItem?.id === item.id ? 'bg-stone-100 border-stone-300' : ''"
+                @click="editItem(item)"
+            >
                 <div class="mt-0.5">
                     <User v-if="item.type === 'character'" class="w-4 h-4 text-purple-600" />
                     <MapPin v-else-if="item.type === 'location'" class="w-4 h-4 text-emerald-600" />
@@ -126,7 +136,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router' // Import useRoute
-import { Globe, User, MapPin, BookOpen, Box, MoreHorizontal } from 'lucide-vue-next'
+import { User, MapPin, BookOpen, Box, MoreHorizontal, Book } from 'lucide-vue-next'
 
 const route = useRoute()
 const storyId = computed(() => route.params.id as string)
@@ -146,12 +156,22 @@ onMounted(() => {
     loadItems()
 })
 
-const isCreating = ref(false)
-const newItem = reactive({
+const editingItem = ref<any>(null)
+
+// Initialize form
+const newItem = reactive({ // Used as template/scratch
     name: '',
     type: 'character',
     description: ''
 })
+
+const openCreate = () => {
+    editingItem.value = { ...newItem }
+}
+
+const editItem = (item: any) => {
+    editingItem.value = { ...item }
+}
 
 const activeFilter = ref('all')
 const filters = [
@@ -209,28 +229,81 @@ onUnmounted(() => {
     stopScrolling()
 })
 
-const createItem = async () => {
-    if (!storyId.value) return
-    try {
-        const res = await fetch(`http://localhost:3001/api/stories/${storyId.value}/world`, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify(newItem)
-        })
-        const savedItem = await res.json()
-        items.value.unshift(savedItem)
+const saveItem = async () => {
+    if (!storyId.value || !editingItem.value) return
+    const isUpdate = !!editingItem.value.id
 
-        // Reset
-        newItem.name = ''
-        newItem.type = 'character'
-        newItem.description = ''
-        isCreating.value = false
+    try {
+        const url = isUpdate 
+            ? `http://localhost:3001/api/stories/${storyId.value}/world/${editingItem.value.id}`
+            : `http://localhost:3001/api/stories/${storyId.value}/world`
+            
+        const method = isUpdate ? 'PUT' : 'POST'
+
+        const res = await fetch(url, {
+             method: method,
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(editingItem.value)
+        })
+        
+        const saved = await res.json()
+
+        if (isUpdate) {
+            const idx = items.value.findIndex(i => i.id === saved.id)
+            if (idx !== -1) items.value[idx] = saved
+        } else {
+            items.value.unshift(saved)
+        }
+
+        editingItem.value = null
     } catch (e) {
-        console.error("Failed to create item", e)
+        console.error("Failed to save item", e)
     }
 }
 
-// TODO: loadItems() from API onMounted
+const deleteItem = async () => {
+    if (!storyId.value || !editingItem.value || !editingItem.value.id) return
+    if(!confirm("Delete this entry?")) return
+
+    try {
+        await fetch(`http://localhost:3001/api/stories/${storyId.value}/world/${editingItem.value.id}`, {
+             method: 'DELETE'
+        })
+        items.value = items.value.filter(i => i.id !== editingItem.value.id)
+        editingItem.value = null
+    } catch (e) {
+        console.error("Delete failed", e)
+    }
+}
+
+const createItemDirectly = async (data: any) => {
+    // Open editor populated with AI data
+    let targetId = data.id
+
+    // Fallback: If ID is missing or invalid (e.g. AI fabricated "char_mathias"), try to find by Name
+    if (!targetId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
+        const existing = items.value.find(i => i.name.toLowerCase() === data.name?.toLowerCase())
+        if (existing) {
+            targetId = existing.id
+        } else {
+            targetId = undefined
+        }
+    }
+
+    // If ID is provided/found, it's an update
+    editingItem.value = { 
+        id: targetId, 
+        name: data.name || '', 
+        type: data.type || 'character', 
+        description: data.description || '' 
+    }
+    // We do NOT auto-save. We let the user review and click "Save/Update".
+}
+
+defineExpose({
+    loadItems,
+    createItem: createItemDirectly
+})
 </script>
 
 <style scoped>

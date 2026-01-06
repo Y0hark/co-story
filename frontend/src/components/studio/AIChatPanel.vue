@@ -38,25 +38,17 @@
             </div>
         </TransitionGroup>
 
-        <div v-if="isAiThinking" class="flex gap-1 ml-2">
-            <div class="w-2 h-2 bg-stone-300 rounded-full animate-bounce"></div>
-            <div class="w-2 h-2 bg-stone-300 rounded-full animate-bounce delay-75"></div>
-            <div class="w-2 h-2 bg-stone-300 rounded-full animate-bounce delay-150"></div>
+        <div v-if="isAiThinking" class="flex gap-1 ml-2 items-center h-8">
+             <div class="flex gap-1">
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse" :class="currentTheme.accentBg" style="animation-delay: 0ms"></span>
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse" :class="currentTheme.accentBg" style="animation-delay: 150ms"></span>
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse" :class="currentTheme.accentBg" style="animation-delay: 300ms"></span>
+             </div>
+             <span class="text-xs text-stone-400 ml-2 font-medium animate-pulse">Thinking...</span>
         </div>
     </div>
 
-    <!-- Quick Actions (Selection) -->
-    <div v-if="hasSelection" class="px-3 pt-2 bg-white flex gap-2 overflow-x-auto pb-2 border-t border-stone-100 scrollbar-hide">
-        <button @click="quickEdit('Fix grammar and spelling')" class="whitespace-nowrap px-3 py-1 bg-teal-50 text-teal-700 text-xs rounded-full border border-teal-100 hover:bg-teal-100">
-            Fix Grammar
-        </button>
-        <button @click="quickEdit('Make it more descriptive')" class="whitespace-nowrap px-3 py-1 bg-amber-50 text-amber-700 text-xs rounded-full border border-amber-100 hover:bg-amber-100">
-            Describe More
-        </button>
-        <button @click="quickEdit('Rewrite in a more dramatic tone')" class="whitespace-nowrap px-3 py-1 bg-purple-50 text-purple-700 text-xs rounded-full border border-purple-100 hover:bg-purple-100">
-            Dramatic
-        </button>
-    </div>
+
 
     <!-- Input -->
     <div class="p-3 border-t border-stone-200 bg-white shrinking-0">
@@ -127,13 +119,17 @@ const md = new MarkdownIt({
     breaks: true
 })
 
+const emit = defineEmits<{
+    (e: 'ai-action', action: any): void
+}>()
+
 const renderMarkdown = (text: string) => {
     return md.render(text)
 }
 
 const props = defineProps<{
     context?: any
-    selection?: string
+
     storyMode?: string
 }>()
 
@@ -249,7 +245,7 @@ const setMode = (mode: string) => {
     showModeMenu.value = false
 }
 
-const hasSelection = computed(() => !!props.selection && props.selection.length > 0)
+
 
 const scrollToBottom = async () => {
     await nextTick()
@@ -265,39 +261,7 @@ const triggerSend = async () => {
     await processMessage(msg)
 }
 
-const quickEdit = async (instruction: string) => {
-    if (!props.selection) return
-    
-    // Add user message to chat to show action
-    localMessages.value.push({ role: 'user', content: `📝 Edit: "${instruction}"` })
-    isAiThinking.value = true
-    scrollToBottom()
 
-    try {
-        const res = await fetch('http://localhost:3001/api/ai/edit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                text: props.selection,
-                instruction
-            })
-        })
-        
-        if (res.ok) {
-            const data = await res.json()
-            localMessages.value.push({ 
-                role: 'assistant', 
-                content: `Here is the edited text:\n\n${data.content}\n\n(Copy/Paste to apply)` 
-            })
-            // Ideally we emit an event to replace text in editor, but copy/paste is safer v1
-        }
-    } catch (e) {
-        localMessages.value.push({ role: 'assistant', content: "Failed to edit text." })
-    } finally {
-        isAiThinking.value = false
-        scrollToBottom()
-    }
-}
 
 const processMessage = async (msg: string) => {
     localMessages.value.push({ role: 'user', content: msg })
@@ -318,7 +282,51 @@ const processMessage = async (msg: string) => {
         
         if (res.ok) {
             const data = await res.json()
-            localMessages.value.push({ role: 'assistant', content: data.content })
+            let content = data.content
+            
+            // Check for ACTION tag
+            const actionRegex = /\[\[ACTION:\s*(\{.*\})\s*\]\]/s
+            const match = content.match(actionRegex)
+            
+            if (match && match[1]) {
+                try {
+                    const actionData = JSON.parse(match[1])
+                    emit('ai-action', actionData)
+                    // Remove the action block from displayed text
+                    content = content.replace(match[0], '').trim()
+                } catch (e) {
+                    console.error("Failed to parse AI action", e)
+                }
+            }
+            
+            // Typewriter Effect
+            const assistantMsgIndex = localMessages.value.length
+            localMessages.value.push({ role: 'assistant', content: '' })
+            
+            // Split content into chunks/chars for speed
+            // Fast speed: 5ms per char? 
+            let i = 0
+            const typeWriter = async () => {
+                if (i < content.length) {
+                    // Type a few chars at once for speed if needed, or 1 by 1 very fast
+                    // Let's do 2 chars per 10ms for a "flow" feel
+                    const chunk = content.slice(i, i + 3)
+                    if (localMessages.value[assistantMsgIndex]) {
+                        localMessages.value[assistantMsgIndex].content += chunk
+                    }
+                    i += 3
+                    await nextTick()
+                    scrollToBottom()
+                    
+                    if (content.length > 500) {
+                         // Ultra fast for long texts
+                         setTimeout(typeWriter, 1) 
+                    } else {
+                         setTimeout(typeWriter, 10)
+                    }
+                }
+            }
+            typeWriter()
         }
     } catch (e) {
         localMessages.value.push({ role: 'assistant', content: "Sorry, I encountered an error." })

@@ -36,15 +36,7 @@
         <Heading2 class="w-4 h-4" />
       </button>
       
-      <div class="w-px h-6 bg-stone-300 mx-2"></div>
-      
-      <button 
-        @click="$emit('request-ai-edit', editor.state.selection)"
-        class="p-2 rounded transition-colors text-teal-600 hover:bg-teal-50 hover:text-teal-700"
-        title="AI Magic Edit"
-      >
-        <Sparkles class="w-4 h-4" />
-      </button>
+
     </div>
 
     <!-- Editor Content -->
@@ -55,14 +47,14 @@
 <script setup lang="ts">
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import { Bold, Italic, Heading1, Heading2, Sparkles } from 'lucide-vue-next'
+import { Bold, Italic, Heading1, Heading2 } from 'lucide-vue-next'
 import { watch, onBeforeUnmount } from 'vue'
 
 const props = defineProps<{
   modelValue?: string
 }>()
 
-const emit = defineEmits(['update:modelValue', 'editor-created', 'request-ai-edit'])
+const emit = defineEmits(['update:modelValue', 'editor-created'])
 
 const editor = useEditor({
   content: props.modelValue || '<p>Start writing your story...</p>',

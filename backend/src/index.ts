@@ -77,6 +77,47 @@ app.post('/api/stories/:id/world', async (req, res) => {
     }
 });
 
+// PUT /api/stories/:id/world/:itemId
+app.put('/api/stories/:id/world/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const { name, type, description, attributes } = req.body;
+
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(itemId)) {
+            return res.status(400).json({ error: 'Invalid ID format' });
+        }
+
+        const result = await pool.query(
+            `UPDATE world_items 
+             SET name = $1, type = $2, description = $3, attributes = $4 
+             WHERE id = $5 
+             RETURNING *`,
+            [name, type, description, attributes || {}, itemId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update world item' });
+    }
+});
+
+// DELETE /api/stories/:id/world/:itemId
+app.delete('/api/stories/:id/world/:itemId', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        await pool.query('DELETE FROM world_items WHERE id = $1', [itemId]);
+        res.json({ message: 'Item deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to delete world item' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
