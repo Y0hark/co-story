@@ -198,11 +198,11 @@ const fontSizeLabel = computed(() => {
 })
 const increaseSize = () => {
     const idx = sizes.indexOf(fontSize.value)
-    if (idx < sizes.length - 1) { fontSize.value = sizes[idx + 1]; saveSettings(); }
+    if (idx < sizes.length - 1) { fontSize.value = sizes[idx + 1]!; saveSettings(); }
 }
 const decreaseSize = () => {
     const idx = sizes.indexOf(fontSize.value)
-    if (idx > 0) { fontSize.value = sizes[idx - 1]; saveSettings(); }
+    if (idx > 0) { fontSize.value = sizes[idx - 1]!; saveSettings(); }
 }
 
 // ... Stats logic ...
@@ -268,19 +268,16 @@ const saveProgress = async (chapterIndex: number) => {
     if (!chap) return;
     
     // Optimistic update (for UI)
-    // Mark previous chapters as read in UI
-    for (let i = 0; i <= chapterIndex; i++) {
-         if (!chapters.value[i].is_read) chapters.value[i].is_read = true;
-    }
+    if (!chap.is_read) chap.is_read = true;
 
     try {
-        await fetch(`http://localhost:3001/api/progress/chapter`, {
+        await fetch(`http://localhost:3001/api/library/read`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: USER_ID, chapterId: chap.id, storyId: storyId })
+            body: JSON.stringify({ userId: USER_ID, chapterId: chap.id })
         });
     } catch (e) {
-        console.error("Failed to save progress", e);
+        console.error("Failed to mark chapter as read", e);
     }
 }
 

@@ -64,32 +64,49 @@ router.get('/:id/stats', async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Parallel queries for stats
-        const storiesCountPromise = pool.query(
-            'SELECT COUNT(*) FROM stories WHERE user_id = $1',
-            [id]
-        );
+        // 1. Written Stats (Total Words, Chapters Written, Stories Published)
+        const writtenStatsRes = await pool.query(`
+            SELECT 
+                COUNT(DISTINCT s.id) filter (where s.visibility = 'public') as stories_published,
+                COUNT(c.id) as chapters_written,
+                COUNT(c.id) filter (where c.status = 'published') as chapters_published,
+                COALESCE(SUM(c.word_count), 0) as words_written,
+                COALESCE(SUM(c.word_count) filter (where s.visibility = 'private'), 0) as private_words
+            FROM stories s
+            LEFT JOIN chapters c ON s.id = c.story_id
+            WHERE s.user_id = $1
+        `, [id]);
 
-        const wordsWrittenPromise = pool.query(
-            `SELECT SUM(word_count) as total_words 
-             FROM chapters c 
-             JOIN stories s ON c.story_id = s.id 
-             WHERE s.user_id = $1`,
-            [id]
-        );
+        // 2. Read Stats (Chapters Read, Words Read)
+        const readStatsRes = await pool.query(`
+            SELECT 
+                COUNT(rc.chapter_id) as chapters_read,
+                COALESCE(SUM(c.word_count), 0) as words_read
+            FROM read_chapters rc
+            JOIN chapters c ON rc.chapter_id = c.id
+            WHERE rc.user_id = $1
+        `, [id]);
 
-        // Mocking reading list for now as we might not have data yet
-        const readingListCount = 12;
+        const written = writtenStatsRes.rows[0];
+        const read = readStatsRes.rows[0];
 
-        const [storiesRes, wordsRes] = await Promise.all([
-            storiesCountPromise,
-            wordsWrittenPromise
-        ]);
+        // 3. Calculate "Self Healing" Time (Private writing)
+        // Heuristic: avg typing speed 20 wpm for creative thought process? 
+        // Or maybe strictly "Writing Time". Let's use 20wpm as a slow, thoughtful pace.
+        const privateWords = parseInt(written.private_words, 10);
+        const healingMinutes = Math.round(privateWords / 20);
 
         res.json({
-            storiesPublished: parseInt(storiesRes.rows[0].count, 10) || 0,
-            wordsWritten: parseInt(wordsRes.rows[0].total_words, 10) || 0,
-            readingList: readingListCount
+            storiesPublished: parseInt(written.stories_published, 10) || 0,
+
+            wordsWritten: parseInt(written.words_written, 10) || 0,
+            chaptersWritten: parseInt(written.chapters_written, 10) || 0,
+            chaptersPublished: parseInt(written.chapters_published, 10) || 0,
+
+            wordsRead: parseInt(read.words_read, 10) || 0,
+            chaptersRead: parseInt(read.chapters_read, 10) || 0,
+
+            timeHealingMinutes: healingMinutes
         });
     } catch (err) {
         console.error(err);

@@ -60,13 +60,32 @@
                         <span class="text-stone-500">Words Written</span>
                         <span class="text-stone-800 font-mono">{{ stats.wordsWritten.toLocaleString() }}</span>
                     </div>
+                     <div class="flex items-center justify-between text-sm">
+                        <span class="text-stone-500">Chapters Written</span>
+                        <span class="text-stone-800 font-mono">{{ stats.chaptersWritten }}</span>
+                    </div>
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-stone-500">Stories Published</span>
                         <span class="text-stone-800 font-mono">{{ stats.storiesPublished }}</span>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-stone-500">Reading List</span>
-                        <span class="text-stone-800 font-mono">{{ stats.readingList }}</span>
+                    
+                    <div class="pt-4 mt-4 border-t border-stone-100 space-y-4">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-stone-500">Words Read</span>
+                            <span class="text-stone-800 font-mono">{{ stats.wordsRead.toLocaleString() }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-stone-500">Chapters Read</span>
+                            <span class="text-stone-800 font-mono">{{ stats.chaptersRead }}</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 mt-4 border-t border-stone-100">
+                         <div class="flex items-center justify-between text-sm">
+                            <span class="text-teal-600 font-medium">Self Healing Time</span>
+                            <span class="text-teal-800 font-mono font-bold">{{ formatTime(stats.timeHealingMinutes) }}</span>
+                        </div>
+                        <p class="text-[10px] text-stone-400 mt-1">Time spent writing in private journals.</p>
                     </div>
                 </div>
             </div>
@@ -184,15 +203,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { BookOpen, Heart, Bookmark } from 'lucide-vue-next'
+import { Heart, BookOpen } from 'lucide-vue-next'
 
 // Mock User ID for development (matches what we use in seeds/auth)
 const USER_ID = '11111111-1111-1111-1111-111111111111'
 
 const user = ref<any>(null)
 const stats = ref<any>(null)
-const stories = ref<any[]>([])
-const savedStories = ref<any[]>([])
 const likedStories = ref<any[]>([])
 const loading = ref(true)
 
@@ -202,6 +219,14 @@ const filteredStories = computed(() => {
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+const formatTime = (minutes: number) => {
+    if (!minutes) return '0m'
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    if (h > 0) return `${h}h ${m}m`
+    return `${m}m`
 }
 
 const getStatusColor = (status: string) => {
@@ -253,7 +278,6 @@ const editForm = ref({
     banner_url: '',
     tags: [] as string[]
 })
-// const newTag = ref('') // Removed user input for tags
 
 const AVAILABLE_GENRES = [
     'Fantasy', 'Sci-Fi', 'Mystery', 'Romance', 'Horror', 'Thriller', 
@@ -283,29 +307,6 @@ const toggleTag = (tag: string) => {
         editForm.value.tags.splice(index, 1)
     }
 }
-// removeTag removed
-
-const publishStory = async (e: Event, story: any) => {
-    e.stopPropagation() // Prevent card click
-    try {
-        const res = await fetch(`http://localhost:3001/api/stories/${story.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ visibility: 'public' })
-        })
-
-        if (res.ok) {
-            // Optimistic update
-            const index = stories.value.findIndex(s => s.id === story.id)
-            if (index !== -1) {
-                stories.value[index].visibility = 'public'
-            }
-        }
-    } catch (err) {
-        console.error("Failed to publish story", err)
-    }
-}
-
 const saveProfile = async () => {
     try {
         const res = await fetch(`http://localhost:3001/api/users/${USER_ID}`, {
@@ -324,30 +325,7 @@ const saveProfile = async () => {
     }
 }
 
-const isSaved = (storyId: string) => {
-    return savedStories.value.some(s => s.id === storyId)
-}
 
-const toggleSave = async (e: Event, story: any) => {
-    e.stopPropagation() // Prevent navigation
-    try {
-        if (isSaved(story.id)) {
-            // Remove
-            await fetch(`http://localhost:3001/api/reading-lists/saved/${USER_ID}/${story.id}`, { method: 'DELETE' })
-            savedStories.value = savedStories.value.filter(s => s.id !== story.id)
-        } else {
-            // Add
-            await fetch(`http://localhost:3001/api/reading-lists/saved/${USER_ID}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ storyId: story.id })
-            })
-            savedStories.value.push(story)
-        }
-    } catch (err) {
-        console.error("Failed to toggle save", err)
-    }
-}
 
 onMounted(() => {
     fetchData()
