@@ -7,6 +7,7 @@ import { pool } from './db/pool';
 dotenv.config();
 
 import libraryRouter from './routes/library';
+import aiRoutes from './routes/ai';
 
 import authRoutes from './routes/auth';
 import storyRoutes from './routes/stories';
@@ -31,6 +32,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/reading-lists', readingListRoutes);
 app.use('/api', socialRoutes);
 app.use('/api/library', libraryRouter);
+app.use('/api/ai', aiRoutes);
 
 // Basic health check
 app.get('/api/health', (req, res) => {

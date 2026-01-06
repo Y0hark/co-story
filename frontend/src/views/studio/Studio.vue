@@ -126,7 +126,11 @@
             </div>
         </div>
 
-        <Editor v-model="currentChapterContent" />
+        <Editor 
+            v-model="currentChapterContent" 
+            @editor-created="setEditor"
+            @request-ai-edit="handleAiEditRequest"
+        />
         </main>
 
         <!-- Right Resize Handle -->
@@ -139,29 +143,7 @@
 
         <!-- Right Sidebar: AI Tools (Bigger) -->
         <aside class="shrink-0 bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm transition-none" :style="{ width: rightSidebarWidth + 'px' }">
-        <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-gradient-to-r from-teal-50 to-amber-50">
-            <h2 class="font-bold font-serif text-teal-900 flex items-center gap-2">
-            <Sparkles class="w-4 h-4 text-teal-600" />
-            Co-Author
-            </h2>
-            <div class="h-2 w-2 rounded-full bg-teal-500 animate-pulse"></div>
-        </div>
-        <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center text-stone-400">
-            <Bot class="w-12 h-12 mb-3 text-stone-300" />
-            <p class="text-sm">AI Suggestions will appear here as you write.</p>
-        </div>
-        <div class="p-4 border-t border-stone-200 bg-stone-50">
-            <div class="relative">
-                <input 
-                    type="text" 
-                    placeholder="Ask Co-Story to help..." 
-                    class="w-full pl-4 pr-10 py-2 bg-white border border-stone-300 rounded-lg text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none placeholder:text-stone-400"
-                />
-                <button class="absolute right-2 top-1.5 p-1 rounded-md text-teal-600 hover:bg-teal-50 transition-colors">
-                    <Send class="w-4 h-4" />
-                </button>
-            </div>
-        </div>
+             <AIChatPanel :context="aiContext" :selection="selectedText" />
         </aside>
     </div>
 
@@ -192,7 +174,11 @@
                     </div>
                 </div>
                 <div class="flex-1 overflow-hidden">
-                    <Editor v-model="currentChapterContent" />
+                    <Editor 
+                        v-model="currentChapterContent" 
+                        @editor-created="setEditor"
+                        @request-ai-edit="handleAiEditRequest"
+                    />
                 </div>
             </div>
 
@@ -252,29 +238,9 @@
 
             <!-- 4. AI Panel -->
             <div v-if="activeTab === 'ai'" class="h-full flex flex-col">
-                 <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-gradient-to-r from-teal-50 to-amber-50 shrink-0">
-                    <h2 class="font-bold font-serif text-teal-900 flex items-center gap-2">
-                        <Sparkles class="w-4 h-4 text-teal-600" /> Co-Author
-                    </h2>
-                </div>
-                 <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center text-stone-400">
-                    <Bot class="w-12 h-12 mb-3 text-stone-300" />
-                    <p class="text-sm">AI Suggestions will appear here.</p>
-                </div>
-                 <div class="p-4 border-t border-stone-200 bg-stone-50 shrink-0">
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            placeholder="Ask Co-Story..." 
-                            class="w-full pl-4 pr-10 py-3 bg-white border border-stone-300 rounded-full text-sm shadow-sm"
-                        />
-                        <button class="absolute right-2 top-2 p-1.5 rounded-full bg-teal-600 text-white">
-                            <Send class="w-3.5 h-3.5" />
-                        </button>
-                    </div>
-                </div>
+                <AIChatPanel :context="aiContext" :selection="selectedText" />
             </div>
-
+            
         </div>
 
         <!-- Bottom Tab Bar -->
@@ -304,7 +270,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Sparkles, Send, Bot, List, PenTool, Globe } from 'lucide-vue-next'
+import { Plus, Sparkles, List, PenTool, Globe } from 'lucide-vue-next'
 import Editor from '../../components/editor/Editor.vue'
 import WorldPanel from '../../components/studio/WorldPanel.vue'
 import BaseSelect from '../../components/ui/BaseSelect.vue'
@@ -376,6 +342,41 @@ const storyId = computed(() => route.params.id as string)
 const story = ref<any>(null)
 const chapters = ref<any[]>([])
 const selectedChapterId = ref<string | number | null>(null)
+
+import AIChatPanel from '@/components/studio/AIChatPanel.vue'
+
+// AI State
+const selectedText = ref('')
+
+// AI Context
+const aiContext = computed(() => ({
+    storyTitle: story.value?.title,
+    currentChapter: selectedChapter.value?.title,
+    status: story.value?.status
+}))
+
+const handleAiEditRequest = (selection: any) => {
+    // Tiptap selection object: { from, to, empty }
+    if (!editorInstance.value) return
+    
+    const { from, to, empty } = selection
+    if (empty) return
+    
+    const text = editorInstance.value.state.doc.textBetween(from, to, ' ')
+    selectedText.value = text
+    
+    // Mobile: Switch tab
+    if (window.innerWidth < 768) {
+        activeTab.value = 'ai'
+    }
+}
+
+// Editor instance
+const editorInstance = ref<any>(null)
+const setEditor = (editor: any) => {
+    editorInstance.value = editor
+}
+
 
 // Computed properties must be declared before they are used in watchers or functions that might trigger them
 const selectedChapter = computed(() => {
