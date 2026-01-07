@@ -7,6 +7,10 @@
       </div>
 
       <form @submit.prevent="handleLogin" class="space-y-6">
+        <div v-if="error" class="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-200 text-sm">
+          {{ error }}
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-zinc-300 mb-2">Email</label>
           <input 
@@ -56,14 +60,16 @@ const authStore = useAuthStore();
 const email = ref('');
 const password = ref('');
 const loading = ref(false);
+const error = ref('');
 
 const handleLogin = async () => {
     loading.value = true;
     try {
         await authStore.login({ email: email.value, password: password.value });
         router.push('/');
-    } catch (error) {
-        console.error(error);
+    } catch (err: any) {
+        console.error(err);
+        error.value = err.response?.data?.error || 'Invalid credentials';
     } finally {
         loading.value = false;
     }

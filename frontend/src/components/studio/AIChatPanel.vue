@@ -57,7 +57,7 @@
                 <span class="w-1.5 h-1.5 rounded-full animate-pulse" :class="currentTheme.accentBg" style="animation-delay: 150ms"></span>
                 <span class="w-1.5 h-1.5 rounded-full animate-pulse" :class="currentTheme.accentBg" style="animation-delay: 300ms"></span>
              </div>
-             <span class="text-xs text-stone-400 ml-2 font-medium animate-pulse">Thinking...</span>
+             <span class="text-xs text-stone-400 ml-2 font-medium animate-pulse">{{ aiStatusMessage }}</span>
         </div>
     </div>
 
@@ -182,6 +182,7 @@ const aiModes = computed(() => {
 const localMode = ref('narrative')
 
 // Watch story mode to auto-switch if needed
+// Watch story mode to auto-switch if needed
 watch(() => props.storyMode, (newMode) => {
     if (newMode === 'journal') {
         localMode.value = 'therapeutic'
@@ -190,6 +191,39 @@ watch(() => props.storyMode, (newMode) => {
     }
 }, { immediate: true })
 const localMessages = ref<{ role: 'user' | 'assistant', content: string }[]>([])
+
+// Load History
+const loadHistory = async () => {
+    if (!props.context?.storyId) return
+    try {
+        const token = localStorage.getItem('token')
+        const res = await fetch(`http://localhost:3001/api/stories/${props.context.storyId}/chat`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+        if (res.ok) {
+            const history = await res.json()
+            if (history.length > 0) {
+                // Map DB history to local format
+                localMessages.value = history.map((h: any) => ({
+                    role: h.role,
+                    content: h.content
+                }))
+            } else {
+                 localMessages.value = [{ role: 'assistant', content: 'Hello! I am your co-author. How can I help you today?' }]
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load history", e)
+    }
+}
+
+// Watch for storyId changes to reload history
+watch(() => props.context?.storyId, (newId) => {
+    if (newId) {
+        loadHistory()
+    }
+}, { immediate: true })
+
 const aiInput = ref('')
 const isAiThinking = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
@@ -275,14 +309,31 @@ const triggerSend = async () => {
     if (!aiInput.value.trim() || isAiThinking.value) return
     const msg = aiInput.value.trim()
     aiInput.value = ''
+    
+    // Save User Msg
+    if (props.context?.storyId) {
+        const token = localStorage.getItem('token')
+        fetch(`http://localhost:3001/api/stories/${props.context.storyId}/chat`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ role: 'user', content: msg })
+        }).catch(err => console.error("Failed to save user message", err))
+    }
+
     await processMessage(msg)
 }
 
 
 
+const aiStatusMessage = ref('')
+
 const processMessage = async (msg: string) => {
     localMessages.value.push({ role: 'user', content: msg })
     isAiThinking.value = true
+    aiStatusMessage.value = 'Thinking...'
     scrollToBottom()
     
     try {
@@ -301,75 +352,14 @@ const processMessage = async (msg: string) => {
             })
         })
         
-        if (res.ok) {
-            const data = await res.json()
-            let content = data.content
-            
-            // Check for ACTION tag
-            // Check for ACTION tag (Robust Regex: Case insensitive, multiline, flexible spaces)
-            const actionRegex = /\[\[\s*ACTION\s*:\s*(\{[\s\S]*?\})\s*\]\]/i
-            const match = content.match(actionRegex)
-            
-            if (match && match[1]) {
-                try {
-                    let jsonStr = match[1]
-                    let actionData;
-                    
-                    try {
-                        // First attempt: Parse as is (handles valid minified or pretty-printed JSON)
-                        actionData = JSON.parse(jsonStr)
-                    } catch (e) {
-                         // Second attempt: Fix common AI error of real newlines inside strings
-                         // This breaks pretty-printed JSON structure (spaces/newlines between keys), 
-                         // so we only do this if the first parse failed.
-                         console.warn("First JSON parse failed, attempting newline fix...", e)
-                         const fixedJson = jsonStr.replace(/\n/g, '\\n')
-                         actionData = JSON.parse(fixedJson)
-                    }
-
-                    emit('ai-action', actionData)
-                } catch (e) {
-                    console.error("Failed to parse AI action (both attempts)", e)
-                }
-                // ALWAYS remove the action block from displayed text so user doesn't see raw code
-                content = content.replace(match[0], '').trim()
-            }
-            
-            // Typewriter Effect
-            const assistantMsgIndex = localMessages.value.length
-            localMessages.value.push({ role: 'assistant', content: '' })
-            
-            // Split content into chunks/chars for speed
-            let i = 0
-            const typeWriter = async () => {
-                if (i < content.length) {
-                    const chunk = content.slice(i, i + 3)
-                    if (localMessages.value[assistantMsgIndex]) {
-                        localMessages.value[assistantMsgIndex].content += chunk
-                    }
-                    i += 3
-                    await nextTick()
-                    scrollToBottom()
-                    
-                    if (content.length > 500) {
-                         setTimeout(typeWriter, 1) 
-                    } else {
-                         setTimeout(typeWriter, 10)
-                    }
-                }
-            }
-            typeWriter()
-        } else {
-             // Handle Errors
+        if (!res.ok) {
+            // Error Handling
              const errData = await res.json().catch(() => ({}))
-             
-             // Handle Auth Errors (Token expire/invalid)
-             if (res.status === 401 || (res.status === 403 && errData.error === 'Invalid token')) {
+             if (res.status === 401) {
                  localStorage.removeItem('token')
                  router.push('/auth/login')
                  return
              }
-
              if (res.status === 403 && errData.code === 'UPGRADE_REQUIRED') {
                  localMessages.value.push({ role: 'assistant', content: "🔒 **Upgrade Required**\n\n" + (errData.error || "Feature limited.") })
              } else if (res.status === 402) {
@@ -377,12 +367,120 @@ const processMessage = async (msg: string) => {
              } else {
                  localMessages.value.push({ role: 'assistant', content: "Error: " + (errData.error || res.statusText) })
              }
+             return;
         }
+
+        // Streaming Logic
+        const reader = res.body!.getReader()
+        const decoder = new TextDecoder()
+        
+        // Character Buffer for smooth animation
+        let charBuffer = ""
+        let isTyping = false
+        let assistantMsgIndex = -1
+        let fullContent = '' // For action parsing
+
+        // Typewriter function
+        const processBuffer = async () => {
+            if (isTyping) return
+            isTyping = true
+            
+            while (charBuffer.length > 0) {
+                // Determine chunk size based on buffer load to catch up if behind
+                const speed = charBuffer.length > 50 ? 5 : 2;
+                const chunk = charBuffer.slice(0, speed);
+                charBuffer = charBuffer.slice(speed);
+                
+                // Initialize message bubble if needed
+                 if (assistantMsgIndex === -1) {
+                    localMessages.value.push({ role: 'assistant', content: '' })
+                    assistantMsgIndex = localMessages.value.length - 1
+                }
+                
+                if (localMessages.value[assistantMsgIndex]) {
+                    localMessages.value[assistantMsgIndex].content += chunk
+                }
+                scrollToBottom()
+                await new Promise(r => setTimeout(r, 10)) // Smooth delay
+            }
+            if (assistantMsgIndex !== -1 && localMessages.value[assistantMsgIndex]) {
+                 // Ensure we update with final content text (minus actions) if needed, 
+                 // but for now, we trust the buffer.
+            }
+            isTyping = false
+        }
+
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            
+            const chunk = decoder.decode(value, { stream: true })
+            const lines = chunk.split('\n').filter(line => line.trim() !== '')
+
+            for (const line of lines) {
+                try {
+                    const data = JSON.parse(line)
+                    if (data.type === 'status') {
+                        aiStatusMessage.value = data.message || 'Thinking...'
+                    } else if (data.type === 'content') {
+                        const textChunk = data.data || ''
+                        fullContent += textChunk
+                        charBuffer += textChunk
+                        processBuffer() // Trigger typewriter
+                    } else if (data.type === 'error') {
+                         if (assistantMsgIndex === -1) {
+                             localMessages.value.push({ role: 'assistant', content: '' })
+                             assistantMsgIndex = localMessages.value.length - 1
+                        }
+                        const err = `\n[Error: ${data.message}]`;
+                        fullContent += err
+                        charBuffer += err
+                        processBuffer()
+                    }
+                } catch (e) {
+                    console.warn("Stream parse error", e)
+                }
+            }
+        }
+        
+        // Ensure buffer finishes
+        while (charBuffer.length > 0) {
+            await new Promise(r => setTimeout(r, 50))
+        }
+
+        // Post-processing: Parse Actions from accumulated content
+        const actionRegex = /\[\[\s*ACTION\s*:\s*(\{[\s\S]*?\})\s*\]\]/i
+        const match = fullContent.match(actionRegex)
+        
+        if (match && match[1]) {
+            try {
+                let jsonStr = match[1]
+                let actionData;
+                try {
+                    actionData = JSON.parse(jsonStr)
+                } catch (e) {
+                     console.warn("First JSON parse failed, attempting newline fix...", e)
+                     const fixedJson = jsonStr.replace(/\n/g, '\\n')
+                     actionData = JSON.parse(fixedJson)
+                }
+                emit('ai-action', actionData)
+                
+                // Hide Action from UI
+                const newContent = fullContent.replace(match[0], '').trim()
+                if (localMessages.value[assistantMsgIndex]) {
+                    localMessages.value[assistantMsgIndex].content = newContent
+                }
+            } catch (e) {
+                console.error("Failed to parse AI action", e)
+            }
+        }
+
     } catch (e: any) {
         console.error("AI Request Failed", e)
         localMessages.value.push({ role: 'assistant', content: "An error occurred." })
     } finally {
         isAiThinking.value = false
+        aiStatusMessage.value = ''
         scrollToBottom()
     }
 }

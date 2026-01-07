@@ -7,6 +7,10 @@
       </div>
 
       <form @submit.prevent="handleRegister" class="space-y-6">
+        <div v-if="error" class="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-200 text-sm">
+          {{ error }}
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-zinc-300 mb-2">Full Name</label>
           <input 
@@ -68,6 +72,7 @@ const name = ref('');
 const email = ref('');
 const password = ref('');
 const loading = ref(false);
+const error = ref('');
 
 const handleRegister = async () => {
     loading.value = true;
@@ -79,8 +84,9 @@ const handleRegister = async () => {
         });
         // Auto login or redirect to login
         router.push('/auth/login');
-    } catch (error) {
-        console.error(error);
+    } catch (err: any) {
+        console.error(err);
+        error.value = err.response?.data?.error || 'An error occurred during registration';
     } finally {
         loading.value = false;
     }

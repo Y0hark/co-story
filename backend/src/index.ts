@@ -1,4 +1,4 @@
-import express from 'express';
+import express from 'express'; // Force restart
 import cors from 'cors';
 import dotenv from 'dotenv';
 // import { Pool } from 'pg'; // Moved to db/pool.ts
@@ -26,6 +26,18 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+import chatRoutes from './routes/chat';
+
+app.use('/api/auth', authRoutes);
+app.use('/api/stories', storyRoutes); // This mounts at /api/stories
+// We want /api/stories/:id/chat so either we mount inside storyRoutes OR we use a separate mount.
+// Since existing storyRoutes handles /:id/..., let's check storyRoutes.
+// Actually, easier to mount at /api for flexible paths or modify storyRoutes. 
+// BUT, I'll mount it separately matching the pattern if possible or just use a new prefix.
+// Wait, my file defines `/:storyId/chat`. So `app.use('/api/stories', chatRoutes)` would result in `/api/stories/:storyId/chat`.
+// Let's verify storyRoutes doesn't conflict.
+
+app.use('/api/stories', chatRoutes); // Overlays on top of existing story routes? Express allows multiple routers on same path.
 app.use('/api/stories', storyRoutes);
 app.use('/api/chapters', chapterRoutes);
 app.use('/api/users', userRoutes);

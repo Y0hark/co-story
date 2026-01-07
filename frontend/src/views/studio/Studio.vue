@@ -432,6 +432,7 @@ const aiContext = computed(() => {
         : null
 
     return {
+        storyId: storyId.value,
         storyTitle: story.value?.title,
         currentChapter: selectedChapter.value?.title,
         chapter: { 
@@ -442,7 +443,7 @@ const aiContext = computed(() => {
         },
         status: story.value?.status,
         chapters: chapters.value.map(c => ({ title: c.title, index: c.index })),
-        world: worldItems.value,
+        worldManifest: worldItems.value.map(w => ({ name: w.name, type: w.type })),
         
         // Include Summaries for AI
         summaryStory: story.value?.summary || null,
