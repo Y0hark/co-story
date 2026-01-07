@@ -22,6 +22,14 @@
                     {{ $route.meta.title || 'Overview' }}
                 </h2>
             </div>
+
+             <button 
+                @click="createStory"
+                class="flex items-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md transform active:scale-95"
+            >
+                <Feather class="w-4 h-4" />
+                <span>New Story</span>
+            </button>
         </header>
 
         <!-- Mobile Header -->
@@ -52,6 +60,13 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import Navbar_Floating from '../components/layout/Navbar_Floating.vue'
 import { Feather } from 'lucide-vue-next'
+
+const router = useRouter()
+
+const createStory = () => {
+    router.push('/app/new-story')
+}
 </script>

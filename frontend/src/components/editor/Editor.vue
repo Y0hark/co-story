@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full min-h-0">
     <!-- Toolbar -->
     <div v-if="editor" class="flex items-center gap-1 p-2 border-b border-stone-200 bg-stone-50">
       <button 
@@ -35,26 +35,51 @@
       >
         <Heading2 class="w-4 h-4" />
       </button>
+
+      <div class="w-px h-6 bg-stone-300 mx-2"></div>
+      
+      <button 
+        @click="$emit('format')"
+        class="p-2 rounded transition-colors text-stone-500 hover:bg-teal-50 hover:text-teal-600"
+        title="Beautify Text (AI)"
+      >
+        <Wand2 class="w-4 h-4" />
+      </button>
       
 
     </div>
 
     <!-- Editor Content -->
     <editor-content :editor="editor" class="flex-1 overflow-y-auto p-8 focus:outline-none" />
+    
+    <!-- Footer / Status Bar -->
+    <div class="px-4 py-2 bg-stone-50 border-t border-stone-200 text-xs text-stone-400 font-medium flex justify-end">
+        <span>{{ wordCount }} words</span>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import { Bold, Italic, Heading1, Heading2 } from 'lucide-vue-next'
-import { watch, onBeforeUnmount } from 'vue'
+import { Bold, Italic, Heading1, Heading2, Wand2 } from 'lucide-vue-next'
+import { watch, onBeforeUnmount, ref } from 'vue'
 
 const props = defineProps<{
   modelValue?: string
 }>()
 
-const emit = defineEmits(['update:modelValue', 'editor-created'])
+const emit = defineEmits(['update:modelValue', 'editor-created', 'format'])
+
+const wordCount = ref(0)
+
+const countWords = (html: string) => {
+    // Strip HTML
+    const text = html.replace(/<[^>]*>/g, ' ')
+    // Count words (matches non-empty sequences of non-whitespace)
+    const matches = text.match(/\S+/g)
+    return matches ? matches.length : 0
+}
 
 const editor = useEditor({
   content: props.modelValue || '<p>Start writing your story...</p>',
@@ -68,9 +93,11 @@ const editor = useEditor({
   },
   onUpdate: ({ editor }) => {
     emit('update:modelValue', editor.getHTML())
+    wordCount.value = countWords(editor.getHTML())
   },
   onCreate: ({ editor }) => {
     emit('editor-created', editor)
+    wordCount.value = countWords(editor.getHTML())
   },
 })
 
@@ -79,6 +106,7 @@ watch(() => props.modelValue, (newValue) => {
   const isSame = editor.value?.getHTML() === newValue
   if (!isSame && newValue !== undefined) {
     editor.value?.commands.setContent(newValue, { emitUpdate: false }) 
+    wordCount.value = countWords(newValue)
   }
 })
 

@@ -1,13 +1,26 @@
 <template>
-  <div class="flex flex-col h-full bg-white relative">
+  <div class="flex flex-col h-full bg-white relative min-h-0">
     <div class="p-3 border-b border-stone-200 shrink-0 transition-colors duration-500" :class="currentTheme.headerGradient">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between w-full">
             <h2 class="font-bold font-serif flex items-center gap-2 text-sm transition-colors duration-500" :class="currentTheme.headerText">
                 <Sparkles class="w-4 h-4" />
                 <span>{{ currentModeLabel }}</span>
                 <span class="text-[10px] font-sans uppercase tracking-wider font-normal opacity-70">{{ currentModeTag }}</span>
             </h2>
-            <div class="h-2 w-2 rounded-full animate-pulse transition-colors duration-500" :class="currentTheme.accentBg" v-if="isAiThinking"></div>
+            
+            <div class="flex items-center gap-2">
+                <button 
+                    v-if="canUndo"
+                    @click="$emit('undo')"
+                    class="flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded transition-colors bg-white/50 hover:bg-white"
+                    :class="currentTheme.accentText"
+                    title="Undo last AI change"
+                >
+                    <RotateCcw class="w-3 h-3" />
+                    <span>Undo</span>
+                </button>
+                <div class="h-2 w-2 rounded-full animate-pulse transition-colors duration-500 shrink-0" :class="currentTheme.accentBg" v-if="isAiThinking"></div>
+            </div>
         </div>
     </div>
     
@@ -110,8 +123,11 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
-import { Sparkles, Bot, Send, ChevronDown, Check } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Sparkles, Bot, Send, ChevronDown, Check, RotateCcw } from 'lucide-vue-next'
 import MarkdownIt from 'markdown-it'
+
+const router = useRouter()
 
 const md = new MarkdownIt({
     html: false,
@@ -119,19 +135,20 @@ const md = new MarkdownIt({
     breaks: true
 })
 
+const props = defineProps<{
+    context?: any
+    storyMode?: string
+    canUndo?: boolean
+}>()
+
 const emit = defineEmits<{
     (e: 'ai-action', action: any): void
+    (e: 'undo'): void
 }>()
 
 const renderMarkdown = (text: string) => {
     return md.render(text)
 }
-
-const props = defineProps<{
-    context?: any
-
-    storyMode?: string
-}>()
 
 const allAiModes = [
     { label: 'Atlas', tag: 'Narrative Coach', value: 'narrative' },
@@ -269,9 +286,13 @@ const processMessage = async (msg: string) => {
     scrollToBottom()
     
     try {
+        const token = localStorage.getItem('token')
         const res = await fetch('http://localhost:3001/api/ai/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify({
                 mode: localMode.value,
                 message: msg,
@@ -285,18 +306,33 @@ const processMessage = async (msg: string) => {
             let content = data.content
             
             // Check for ACTION tag
-            const actionRegex = /\[\[ACTION:\s*(\{.*\})\s*\]\]/s
+            // Check for ACTION tag (Robust Regex: Case insensitive, multiline, flexible spaces)
+            const actionRegex = /\[\[\s*ACTION\s*:\s*(\{[\s\S]*?\})\s*\]\]/i
             const match = content.match(actionRegex)
             
             if (match && match[1]) {
                 try {
-                    const actionData = JSON.parse(match[1])
+                    let jsonStr = match[1]
+                    let actionData;
+                    
+                    try {
+                        // First attempt: Parse as is (handles valid minified or pretty-printed JSON)
+                        actionData = JSON.parse(jsonStr)
+                    } catch (e) {
+                         // Second attempt: Fix common AI error of real newlines inside strings
+                         // This breaks pretty-printed JSON structure (spaces/newlines between keys), 
+                         // so we only do this if the first parse failed.
+                         console.warn("First JSON parse failed, attempting newline fix...", e)
+                         const fixedJson = jsonStr.replace(/\n/g, '\\n')
+                         actionData = JSON.parse(fixedJson)
+                    }
+
                     emit('ai-action', actionData)
-                    // Remove the action block from displayed text
-                    content = content.replace(match[0], '').trim()
                 } catch (e) {
-                    console.error("Failed to parse AI action", e)
+                    console.error("Failed to parse AI action (both attempts)", e)
                 }
+                // ALWAYS remove the action block from displayed text so user doesn't see raw code
+                content = content.replace(match[0], '').trim()
             }
             
             // Typewriter Effect
@@ -304,12 +340,9 @@ const processMessage = async (msg: string) => {
             localMessages.value.push({ role: 'assistant', content: '' })
             
             // Split content into chunks/chars for speed
-            // Fast speed: 5ms per char? 
             let i = 0
             const typeWriter = async () => {
                 if (i < content.length) {
-                    // Type a few chars at once for speed if needed, or 1 by 1 very fast
-                    // Let's do 2 chars per 10ms for a "flow" feel
                     const chunk = content.slice(i, i + 3)
                     if (localMessages.value[assistantMsgIndex]) {
                         localMessages.value[assistantMsgIndex].content += chunk
@@ -319,7 +352,6 @@ const processMessage = async (msg: string) => {
                     scrollToBottom()
                     
                     if (content.length > 500) {
-                         // Ultra fast for long texts
                          setTimeout(typeWriter, 1) 
                     } else {
                          setTimeout(typeWriter, 10)
@@ -327,9 +359,28 @@ const processMessage = async (msg: string) => {
                 }
             }
             typeWriter()
+        } else {
+             // Handle Errors
+             const errData = await res.json().catch(() => ({}))
+             
+             // Handle Auth Errors (Token expire/invalid)
+             if (res.status === 401 || (res.status === 403 && errData.error === 'Invalid token')) {
+                 localStorage.removeItem('token')
+                 router.push('/auth/login')
+                 return
+             }
+
+             if (res.status === 403 && errData.code === 'UPGRADE_REQUIRED') {
+                 localMessages.value.push({ role: 'assistant', content: "🔒 **Upgrade Required**\n\n" + (errData.error || "Feature limited.") })
+             } else if (res.status === 402) {
+                 localMessages.value.push({ role: 'assistant', content: "🪙 **Insufficient Credits**\n\n" + (errData.error || "Please purchase more credits.") })
+             } else {
+                 localMessages.value.push({ role: 'assistant', content: "Error: " + (errData.error || res.statusText) })
+             }
         }
-    } catch (e) {
-        localMessages.value.push({ role: 'assistant', content: "Sorry, I encountered an error." })
+    } catch (e: any) {
+        console.error("AI Request Failed", e)
+        localMessages.value.push({ role: 'assistant', content: "An error occurred." })
     } finally {
         isAiThinking.value = false
         scrollToBottom()

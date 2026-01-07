@@ -5,8 +5,7 @@
       type="button"
       class="w-full flex items-center justify-between gap-2 px-3 py-2 bg-stone-50 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/20"
       :class="[
-        isOpen ? 'border-teal-500 ring-2 ring-teal-500/20' : 'border-stone-200 hover:border-stone-300',
-        props.class
+        isOpen ? 'border-teal-500 ring-2 ring-teal-500/20' : 'border-stone-200 hover:border-stone-300'
       ]"
     >
       <span class="truncate" :class="modelValue ? 'text-stone-900' : 'text-stone-400'">
@@ -46,7 +45,6 @@ const props = defineProps<{
   modelValue: string | number
   options: { label: string; value: string | number }[]
   placeholder?: string
-  class?: string
 }>()
 
 const emit = defineEmits(['update:modelValue'])

@@ -14,21 +14,24 @@
             class="bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm min-h-[150px]"
             :style="{ height: leftSplitPercentage + '%' }"
         >
-            <div class="px-4 py-3 border-b border-stone-100 bg-stone-50 relative">
-                <button 
-                    @click="router.push('/app/new-story')"
-                    class="absolute top-3 right-4 text-stone-400 hover:text-teal-600 transition-colors"
-                    title="Tell a new Story"
-                >
-                    <Feather class="w-4 h-4" />
-                </button>
-                <input 
-                    v-if="story"
-                    type="text" 
-                    v-model="story.title"
-                    class="w-full bg-transparent font-serif font-bold text-stone-900 placeholder:text-stone-400 border-none outline-none focus:ring-0 px-0 text-base"
-                    placeholder="Story Title..."
-                />
+            <div class="px-4 py-3 border-b border-stone-100 bg-stone-50">
+                <div class="flex items-center gap-2">
+                    <button 
+                        @click="router.push('/app/home')"
+                        class="text-stone-400 hover:text-stone-600 transition-colors"
+                        title="Back to Home"
+                    >
+                        <ArrowLeft class="w-4 h-4" />
+                    </button>
+                    <input 
+                        v-if="story"
+                        type="text" 
+                        v-model="story.title"
+                        class="flex-1 bg-transparent font-serif font-bold text-stone-900 placeholder:text-stone-400 border-none outline-none focus:ring-0 px-2 text-base truncate"
+                        placeholder="Story Title..."
+                    />
+                </div>
+
                 <div v-if="story" class="mt-2 flex items-center gap-2">
                     <BaseSelect 
                         v-model="story.status" 
@@ -38,7 +41,7 @@
                             { label: 'Finished', value: 'finished' },
                             { label: 'Abandoned', value: 'abandoned' }
                         ]"
-                        class="w-32"
+                        class="w-40"
                     />
                     <span class="text-[10px] text-stone-400 uppercase tracking-widest font-bold">Status</span>
                 </div>
@@ -52,38 +55,49 @@
                 ></textarea>
             </div>
             <div class="p-4 border-b border-stone-200 flex items-center justify-between shrink-0 bg-white">
-            <h2 class="font-bold font-serif text-stone-900 text-sm">Chapters</h2>
-            <button 
-                @click="createChapter"
-                class="text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded p-1 transition-colors"
+                <h2 class="font-bold font-serif text-stone-900 text-sm">Chapters</h2>
+                <button 
+                    @click="createChapter"
+                    class="text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded p-1 transition-colors"
                 >
-                <Plus class="w-4 h-4" />
-            </button>
+                    <Plus class="w-4 h-4" />
+                </button>
             </div>
+            
             <div class="flex-1 overflow-y-auto p-4 space-y-2">
-            <div 
-                v-for="chapter in chapters" 
-                :key="chapter.id"
-                class="px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors border"
-                :class="selectedChapterId === chapter.id ? 'bg-stone-100 text-teal-700 border-stone-200 font-medium' : 'bg-white border-transparent text-stone-500 hover:text-stone-900 hover:bg-stone-50'"
-                @click="selectedChapterId = chapter.id"
-            >
-                <div class="flex items-center justify-between w-full">
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <span class="text-xs opacity-50 shrink-0">{{ chapter.index }}.</span>
-                        <span class="truncate">{{ chapter.title }}</span>
+                <div 
+                    v-for="chapter in chapters" 
+                    :key="chapter.id"
+                    class="px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors border group relative"
+                    :class="selectedChapterId === chapter.id ? 'bg-stone-100 text-teal-700 border-stone-200 font-medium' : 'bg-white border-transparent text-stone-500 hover:text-stone-900 hover:bg-stone-50'"
+                    @click="selectedChapterId = chapter.id"
+                >
+                    <div class="flex items-center justify-between w-full">
+                        <div class="flex items-center gap-2 overflow-hidden flex-1">
+                            <span class="text-xs opacity-50 shrink-0">{{ chapter.index }}.</span>
+                            <span class="truncate">{{ chapter.title }}</span>
+                        </div>
+                        <div class="flex items-center gap-2 ml-2">
+                            <div v-if="chapter.status === 'published'" class="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" title="Published"></div>
+                            <button 
+                                @click.stop="confirmDeleteChapter(chapter)"
+                                class="opacity-0 group-hover:opacity-100 p-1 text-stone-300 hover:text-red-500 transition-all"
+                                title="Delete Chapter"
+                            >
+                                <Trash2 class="w-3.5 h-3.5" />
+                            </button>
+                        </div>
                     </div>
-                    <div v-if="chapter.status === 'published'" class="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0 ml-2" title="Published"></div>
                 </div>
             </div>
-            </div>
+            
             <div class="p-4 border-t border-stone-200 bg-stone-50 shrink-0">
-            <button 
-                @click="createChapter"
-                class="w-full py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-lg text-sm font-medium transition-colors shadow-sm"
-            >
-                + New Chapter
-            </button>
+                <button 
+                    @click="createChapter"
+                    class="w-full py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                >
+                    + New Chapter
+                </button>
             </div>
         </div>
 
@@ -97,7 +111,10 @@
 
         <!-- Bottom: World Database -->
         <div class="flex-1 bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm min-h-[150px]">
-            <WorldPanel ref="worldPanel" class="h-full" />
+            <WorldPanel ref="worldPanel" class="h-full" @items-updated="handleWorldUpdate" />
+            <TutorialTip id="world-panel-tip" title="Story Codex" position="top">
+                Keep track of your characters, locations, and lore here. The AI uses this to maintain continuity!
+            </TutorialTip>
         </div>
 
         </aside>
@@ -120,7 +137,7 @@
                 placeholder="Chapter Title"
                 class="flex-1 bg-transparent text-3xl font-serif font-bold text-stone-900 placeholder:text-stone-300 border-none outline-none focus:ring-0 px-0 mr-4"
             />
-            <div v-if="selectedChapter && story?.mode !== 'journal'">
+            <div v-if="selectedChapter && story?.mode !== 'journal'" class="flex items-center gap-2">
                 <button 
                     @click="togglePublishChapter"
                     class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border"
@@ -136,6 +153,7 @@
         <Editor 
             v-model="currentChapterContent" 
             @editor-created="setEditor"
+            @format="handleFormat"
         />
         </main>
 
@@ -149,13 +167,16 @@
 
         <!-- Right Sidebar: AI Tools (Bigger) -->
         <aside class="shrink-0 bg-white border border-stone-200 rounded-xl flex flex-col overflow-hidden shadow-sm transition-none" :style="{ width: rightSidebarWidth + 'px' }">
-             <div class="border-b border-stone-100 p-2 flex justify-end bg-stone-50" v-if="contentHistory.length > 0">
-                <button @click="undoLastChange" class="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-900 px-2 py-1 rounded hover:bg-stone-200 transition-colors" title="Undo AI Change">
-                    <RotateCcw class="w-3 h-3" />
-                    Undo
-                </button>
-             </div>
-             <AIChatPanel :context="aiContext" :story-mode="story?.mode" @ai-action="handleAiAction" />
+             <AIChatPanel 
+                :context="aiContext" 
+                :story-mode="story?.mode" 
+                :can-undo="contentHistory.length > 0"
+                @ai-action="handleAiAction" 
+                @undo="undoLastChange"
+             />
+             <TutorialTip id="ai-panel-tip" title="AI Assistant" position="left">
+                Chat with your AI partner here. Ask for ideas, critiques, or to write scenes for you!
+             </TutorialTip>
         </aside>
     </div>
 
@@ -251,7 +272,7 @@
 
             <!-- 3. World Panel -->
             <div v-if="activeTab === 'world'" class="h-full overflow-hidden flex flex-col">
-                <WorldPanel class="flex-1" />
+                <WorldPanel class="flex-1" @items-updated="handleWorldUpdate" />
             </div>
 
             <!-- 4. AI Panel -->
@@ -280,18 +301,32 @@
                 <span class="text-[10px] font-medium">AI</span>
             </button>
         </div>
-    </div>
+        </div>
+
+    <!-- Confirm Delete Modal -->
+    <BaseModal
+        :is-open="showDeleteModal"
+        title="Delete Chapter?"
+        description="Are you sure you want to delete this chapter? This cannot be undone."
+        confirm-text="Delete"
+        :is-destructive="true"
+        @close="showDeleteModal = false"
+        @confirm="executeDeleteChapter"
+    />
 
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import MarkdownIt from 'markdown-it'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Sparkles, List, PenTool, Globe, Feather, RotateCcw } from 'lucide-vue-next'
+import { Plus, Sparkles, List, PenTool, Globe, Feather, ArrowLeft, Trash2 } from 'lucide-vue-next'
 import Editor from '../../components/editor/Editor.vue'
 import WorldPanel from '../../components/studio/WorldPanel.vue'
 import BaseSelect from '../../components/ui/BaseSelect.vue'
+import TutorialTip from '../../components/ui/TutorialTip.vue'
+import BaseModal from '../../components/ui/BaseModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -360,7 +395,12 @@ const handleMouseMove = (e: MouseEvent) => {
 const storyId = computed(() => route.params.id as string)
 const story = ref<any>(null)
 const chapters = ref<any[]>([])
+const worldItems = ref<any[]>([])
 const selectedChapterId = ref<string | number | null>(null)
+
+const handleWorldUpdate = (items: any[]) => {
+    worldItems.value = items
+}
 
 import AIChatPanel from '@/components/studio/AIChatPanel.vue'
 
@@ -368,11 +408,48 @@ import AIChatPanel from '@/components/studio/AIChatPanel.vue'
 
 
 // AI Context
-const aiContext = computed(() => ({
-    storyTitle: story.value?.title,
-    currentChapter: selectedChapter.value?.title,
-    status: story.value?.status
-}))
+const aiContext = computed(() => {
+    // Compute Summaries
+    const currentIdx = selectedChapter.value?.index ?? -1
+    
+    // 1. Previous Chapter Summary
+    // We look for index - 1.
+    const prevChapter = chapters.value.find(c => c.index === currentIdx - 1)
+    const summaryPreviousChapter = prevChapter?.summary || null
+    
+    // 2. Recent Context (3 chapters before previous)
+    // Range: [currentIdx - 4, currentIdx - 2] inclusive
+    // e.g. if current is 5 (Chapter 6). Prev is 4 (Chapter 5).
+    // Recent Context: 1, 2, 3 (Indexes 0, 1, 2? No, indexes start at 1 usually? 
+    // Schema says chapter_index is INT. Studio uses c.index. 
+    // Let's assume indices are consistent.
+    const recentContextChapters = chapters.value
+        .filter(c => c.index >= currentIdx - 4 && c.index <= currentIdx - 2)
+        .sort((a, b) => a.index - b.index)
+        
+    const summaryRecentContext = recentContextChapters.length > 0 
+        ? recentContextChapters.map(c => `Chapter ${c.index}: ${c.summary || 'No summary'}`).join('\n')
+        : null
+
+    return {
+        storyTitle: story.value?.title,
+        currentChapter: selectedChapter.value?.title,
+        chapter: { 
+            title: selectedChapter.value?.title, 
+            // Strip HTML tags for AI Context to encourage plain text/markdown response
+            content: selectedChapter.value?.content?.replace(/<[^>]*>/g, '') || '',
+            index: selectedChapter.value?.index 
+        },
+        status: story.value?.status,
+        chapters: chapters.value.map(c => ({ title: c.title, index: c.index })),
+        world: worldItems.value,
+        
+        // Include Summaries for AI
+        summaryStory: story.value?.summary || null,
+        summaryPreviousChapter,
+        summaryRecentContext
+    }
+})
 
 
 
@@ -447,7 +524,8 @@ const saveStory = async () => {
              body: JSON.stringify({
                  title: story.value.title,
                  status: story.value.status,
-                 description: story.value.description
+                 description: story.value.description,
+                 summary: story.value.summary // Include summary
              })
         })
     } catch (e) {
@@ -484,7 +562,8 @@ const saveChapter = async () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 title: selectedChapter.value.title,
-                content: selectedChapter.value.content
+                content: selectedChapter.value.content,
+                summary: selectedChapter.value.summary // Save summary
             })
         })
     } catch (e) {
@@ -492,7 +571,80 @@ const saveChapter = async () => {
     }
 }
 
+const isSummarizing = ref(false)
+const summarizeChapter = async () => {
+    if (!selectedChapter.value?.content || isSummarizing.value) return
+    isSummarizing.value = true
+    try {
+         const token = localStorage.getItem('token')
+         const res = await fetch('http://localhost:3001/api/ai/summarize', {
+             method: 'POST',
+             headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+             },
+             body: JSON.stringify({ 
+                 text: selectedChapter.value.content.replace(/<[^>]*>/g, ''), // Strip HTML
+                 type: 'chapter' 
+             })
+         })
+         
+         if (res.ok) {
+             const data = await res.json()
+             selectedChapter.value.summary = data.summary
+             // Save immediately
+             await saveChapter()
+         }
+    } catch (e) {
+        console.error("Summary failed", e)
+    } finally {
+        isSummarizing.value = false
+    }
+}
+
+const updateStorySummary = async () => {
+    if (!storyId.value || isSummarizing.value) return
+    // Concatenate all chapter contents
+    const fullText = chapters.value
+        .map(c => `Chapter ${c.index}: ${c.title}\n${c.content?.replace(/<[^>]*>/g, '') || ''}`)
+        .join('\n\n')
+    
+    if (fullText.length < 100) return 
+
+    try {
+         const token = localStorage.getItem('token')
+         const res = await fetch('http://localhost:3001/api/ai/summarize', {
+             method: 'POST',
+             headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+             },
+             body: JSON.stringify({ 
+                 text: fullText,
+                 type: 'story' 
+             })
+         })
+         
+         if (res.ok) {
+             const data = await res.json()
+             if (story.value) {
+                 story.value.summary = data.summary
+                 await saveStory()
+             }
+         }
+    } catch (e) {
+        console.error("Story Summary failed", e)
+    }
+}
+
 const createChapter = async (initialData: any = {}) => {
+    // Automatic Summarization Trigger
+    if (selectedChapter.value && selectedChapter.value.content && selectedChapter.value.content.length > 50) {
+        console.log("Auto-summarizing previous chapter and story...")
+        await summarizeChapter() // Wait for chapter summary (critical for context)
+        updateStorySummary() // Fire and forget story summary (heavy, can lag)
+    }
+
     try {
         const res = await fetch('http://localhost:3001/api/chapters', {
             method: 'POST',
@@ -519,6 +671,38 @@ const createChapter = async (initialData: any = {}) => {
 
         selectedChapterId.value = newChapter.id
     } catch (e) {
+        console.error("Failed to create chapter", e)
+    }
+}
+
+const showDeleteModal = ref(false)
+const chapterToDelete = ref<any>(null)
+
+const confirmDeleteChapter = (chapter: any) => {
+    chapterToDelete.value = chapter
+    showDeleteModal.value = true
+}
+
+const executeDeleteChapter = async () => {
+    if (!chapterToDelete.value) return
+    
+    try {
+        await fetch(`http://localhost:3001/api/chapters/${chapterToDelete.value.id}`, { 
+            method: 'DELETE'
+        })
+        
+        // Remove locally
+        chapters.value = chapters.value.filter(c => c.id !== chapterToDelete.value.id)
+        
+        // If deleted was selected, select another
+        if (selectedChapterId.value === chapterToDelete.value.id) {
+            selectedChapterId.value = chapters.value[0]?.id || null
+        }
+    } catch (e) {
+        console.error("Failed to delete chapter", e)
+    } finally {
+        showDeleteModal.value = false
+        chapterToDelete.value = null
     }
 }
 
@@ -539,6 +723,45 @@ const undoLastChange = () => {
         selectedChapter.value.content = prev
     }
 }
+
+const isFormatting = ref(false)
+const handleFormat = () => {
+    if (!selectedChapter.value?.content) return
+    
+    isFormatting.value = true
+    pushHistory()
+    
+    let text = selectedChapter.value.content || ''
+    
+    // 1. Split dialogues: If a sentence ends and a dialogue starts on same line (inside same <p>), break it.
+    // Case: "Hello." — said John. (Standardize dashes first maybe?)
+    
+    // Standardize dialogue dashes to em-dash
+    text = text.replace(/(\s|^)(-—|--|-|–)(\s)/g, '$1—$3')
+    
+    // Ensure dialogue starts on new paragraph if it follows punctuation
+    // Looking for: Punctuation + Spaces + Dash/Quote
+    // We assume HTML content, so we are looking for patterns inside <p> usually.
+    // A simple approach is to replace any "—" that follows a sentence end with "</p><p>—"
+    
+    // Fix: Dialogue starting in the middle of a paragraph
+    // Pattern: [.!?] + space + [—"«]
+    text = text.replace(/([.!?])\s+(—|«|")/g, '$1</p><p>$2')
+    
+    // 2. Fix typography
+    // Space before punctuation (French style - basic rule)
+    text = text.replace(/([a-zA-Z])([:;?!])/g, '$1&nbsp;$2')
+    
+    // 3. Ensure paragraphs are not too long? (Optional, maybe too aggressive)
+    
+    // 4. Clean up Multiple empty paragraphs
+    text = text.replace(/(<p><\/p>){2,}/g, '<p></p>')
+
+    selectedChapter.value.content = text
+    isFormatting.value = false
+}
+
+const md = new MarkdownIt()
 
 const handleAiAction = async (action: any) => {
     console.log("Processing AI Action:", action)
@@ -562,7 +785,8 @@ const handleAiAction = async (action: any) => {
         case 'update_chapter_content':
             if (selectedChapter.value && data.content) {
                 pushHistory() // Save state before change
-                currentChapterContent.value = data.content 
+                // Render markdown to HTML
+                currentChapterContent.value = md.render(data.content) 
                 // content watcher handles save
             }
             break;
@@ -570,14 +794,18 @@ const handleAiAction = async (action: any) => {
         case 'append_chapter_content':
             if (selectedChapter.value && data.content) {
                 pushHistory() // Save state before change
-                const newContent = (currentChapterContent.value || '') + data.content
-                currentChapterContent.value = newContent
+                // Render markdown to HTML and append
+                const newHtml = md.render(data.content)
+                const current = currentChapterContent.value || ''
+                // crude append: assuming newHtml is block level (p)
+                currentChapterContent.value = current + newHtml
             }
             break;
 
         case 'create_chapter':
             if (data.title) {
-                await createChapter({ title: data.title, content: data.content })
+                const content = data.content ? md.render(data.content) : ''
+                await createChapter({ title: data.title, content: content })
             }
             break;
 

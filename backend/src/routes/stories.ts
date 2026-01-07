@@ -189,6 +189,11 @@ router.put('/:id', async (req, res) => {
             fields.push(`status = $${idx++}`);
             values.push(status);
         }
+        const { summary } = req.body;
+        if (summary !== undefined) {
+            fields.push(`summary = $${idx++}`);
+            values.push(summary);
+        }
 
         if (fields.length === 0) return res.json({ message: 'No changes' });
 

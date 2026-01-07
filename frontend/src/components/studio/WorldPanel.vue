@@ -138,6 +138,8 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router' // Import useRoute
 import { User, MapPin, BookOpen, Box, MoreHorizontal, Book } from 'lucide-vue-next'
 
+const emit = defineEmits(['items-updated'])
+
 const route = useRoute()
 const storyId = computed(() => route.params.id as string)
 const items = ref<any[]>([])
@@ -147,10 +149,12 @@ const loadItems = async () => {
     try {
         const res = await fetch(`http://localhost:3001/api/stories/${storyId.value}/world`)
         items.value = await res.json()
+        emit('items-updated', items.value)
     } catch (e) {
         console.error("Failed to load world items", e)
     }
 }
+
 
 onMounted(() => {
     loadItems()
@@ -254,6 +258,8 @@ const saveItem = async () => {
         } else {
             items.value.unshift(saved)
         }
+        
+        emit('items-updated', items.value)
 
         editingItem.value = null
     } catch (e) {
@@ -270,6 +276,7 @@ const deleteItem = async () => {
              method: 'DELETE'
         })
         items.value = items.value.filter(i => i.id !== editingItem.value.id)
+        emit('items-updated', items.value)
         editingItem.value = null
     } catch (e) {
         console.error("Delete failed", e)

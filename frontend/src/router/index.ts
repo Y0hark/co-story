@@ -71,4 +71,24 @@ const router = createRouter({
     ]
 })
 
+router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem('token')
+
+    // Check if route requires auth
+    if (to.matched.some(record => record.meta.requiresAuth)) {
+        if (!token) {
+            next({ name: 'login' })
+            return
+        }
+    }
+
+    // Redirect to app if already logged in and visiting auth pages
+    if ((to.name === 'login' || to.name === 'register') && token) {
+        next({ name: 'studio' }) // or dashboard
+        return
+    }
+
+    next()
+})
+
 export default router

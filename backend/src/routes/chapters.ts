@@ -63,7 +63,7 @@ router.get('/story/:storyId', async (req, res) => {
 
         const result = await pool.query(
             `SELECT 
-                c.id, c.chapter_index, c.title, c.content, c.word_count, c.status,
+                c.id, c.chapter_index, c.title, c.content, c.word_count, c.status, c.summary,
                 ${selectFields}
              FROM chapters c
              ${userReadJoin}
@@ -107,10 +107,11 @@ router.put('/:id', async (req, res) => {
              SET title = COALESCE($1, title), 
                  content = COALESCE($2, content),
                  status = COALESCE($3, status),
+                 summary = COALESCE($4, summary),
                  updated_at = now()
-             WHERE id = $4
+             WHERE id = $5
              RETURNING *`,
-            [title, content, status, id]
+            [title, content, status, req.body.summary, id]
         );
         res.json(result.rows[0]);
     } catch (err) {
@@ -136,6 +137,18 @@ router.post('/', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Failed to create chapter' });
+    }
+});
+
+// DELETE /api/chapters/:id
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM chapters WHERE id = $1', [id]);
+        res.json({ message: 'Chapter deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to delete chapter' });
     }
 });
 
