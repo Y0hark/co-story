@@ -82,8 +82,10 @@ const handleRegister = async () => {
             email: email.value, 
             password: password.value 
         });
-        // Auto login or redirect to login
-        router.push('/auth/login');
+        // Auto-login logic is handled in store or we assume token is set. 
+        // If register only created account, we might need to login, but usually modern flows auto-login.
+        // The AuthController.register returns a token, so we are logged in.
+        router.push('/app');
     } catch (err: any) {
         console.error(err);
         error.value = err.response?.data?.error || 'An error occurred during registration';

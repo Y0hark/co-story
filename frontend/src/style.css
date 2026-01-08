@@ -1,21 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg-primary: #18181b;
-  /* charcoal-900 (approx) */
-  --color-bg-secondary: #27272a;
-  /* charcoal-800 */
-  --color-text-primary: #f4f4f5;
-  /* zinc-100 */
-  --color-text-secondary: #a1a1aa;
-  /* zinc-400 */
+  --color-bg-primary: #FAFAF9;
+  /* stone-50 */
+  --color-bg-secondary: #FFFFFF;
+  /* white for cards */
+  --color-text-primary: #1C1917;
+  /* stone-900 */
+  --color-text-secondary: #57534E;
+  /* stone-600 */
   --color-accent: #2dd4bf;
-  /* teal-400 */
+  /* teal-400 - can keep or adjust if needed, mostly used for highlights */
 }
 
 body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+  font-family: 'Merriweather', serif;
+  /* Switch to Serif as primary, or at least for headings if desired. User asked for Serif title, but maybe body should remain sans? User said "Titre : Une belle police Serif...". Let's use Inter for body and Merriweather for headings in components. BUT user "Le Concept : Encre sur Papier" suggests a more book-ish feel. I will keep Inter as default but ensure Merriweather is imported/available and used for headings. */
   font-family: 'Inter', sans-serif;
 }
 
@@ -27,5 +29,15 @@ body {
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+
+  .hover-sketch {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .hover-sketch:hover {
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    transform: scale(1.02) rotate(-1deg);
+    box-shadow: 3px 3px 0 0 currentColor;
   }
 }

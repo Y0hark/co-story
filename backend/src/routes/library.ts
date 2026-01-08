@@ -1,5 +1,6 @@
 import express from 'express';
 import { pool } from '../db/pool';
+import { subscriptionService } from '../services/subscriptionService';
 
 const router = express.Router();
 
@@ -73,13 +74,20 @@ router.get('/:userId', async (req, res) => {
 router.post('/lists', async (req, res) => {
     try {
         const { userId, name } = req.body;
+
+        // Check Quota
+        await subscriptionService.checkListQuota(userId);
+
         const result = await pool.query(
             "INSERT INTO reading_lists (user_id, name) VALUES ($1, $2) RETURNING *",
             [userId, name]
         );
         res.json(result.rows[0]);
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
+        if (err.statusCode === 403) {
+            return res.status(403).json({ error: err.message, code: 'QUOTA_EXCEEDED' });
+        }
         res.status(500).json({ error: 'Failed to create list' });
     }
 });

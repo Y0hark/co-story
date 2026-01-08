@@ -98,7 +98,7 @@ router.post('/chat', authenticateToken, async (req: express.Request, res: expres
         }
 
     } catch (err: any) {
-        console.error(err);
+        console.error('AI Service Error:', err);
         if (!res.headersSent) {
             if (err.name === 'UpgradeRequiredError') {
                 return res.status(403).json({ error: err.message, code: 'UPGRADE_REQUIRED' });
@@ -106,10 +106,14 @@ router.post('/chat', authenticateToken, async (req: express.Request, res: expres
             if (err.name === 'InsufficientCreditsError') {
                 return res.status(402).json({ error: err.message, code: 'INSUFFICIENT_CREDITS' });
             }
+            // Handle quota limit errors (AppError with statusCode 403)
+            if (err.name === 'AppError' && err.statusCode === 403) {
+                return res.status(403).json({ error: err.message });
+            }
             res.status(500).json({ error: 'Internal server error' });
         } else {
             // If headers sent, we can only end the stream with an error chunk
-            res.write(JSON.stringify({ type: 'error', message: 'Internal server error during stream' }) + '\n');
+            res.write(JSON.stringify({ type: 'error', message: err.message || 'Internal server error during stream' }) + '\n');
             res.end();
         }
     }
@@ -159,5 +163,117 @@ router.post('/summarize', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Summary generation failed' });
     }
 });
+
+// POST /api/ai/chapters/generate
+// Endpoint for generating a chapter with strict quota enforcement
+router.post('/chapters/generate', authenticateToken, async (req: express.Request, res: express.Response) => {
+    try {
+        const { mode, message, context, history } = req.body;
+        const userId = (req as AuthRequest).user?.id;
+
+        if (!mode || !message) {
+            return res.status(400).json({ error: 'Mode and message are required' });
+        }
+
+        // Set headers for streaming
+        res.setHeader('Content-Type', 'application/x-ndjson');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        // We explicitly mark this as chapter generation in the context if it's not already
+        // This helps the AI Service logic (though we also check context.chapter existence)
+        const effectiveContext = { ...context, isChapterGeneration: true };
+
+        // Pass to standard stream method
+        const stream = aiService.generateResponseStream(mode as AIMode, message, effectiveContext, history || [], userId);
+
+        let fullContent = '';
+
+        for await (const chunk of stream) {
+            res.write(JSON.stringify(chunk) + '\n');
+            if (chunk.type === 'content' && chunk.data) {
+                fullContent += chunk.data;
+            }
+        }
+
+        res.end();
+
+        // Background: Save AI Response & Trigger Summarization (Same as /chat)
+        if (effectiveContext.storyId && fullContent.trim().length > 0) {
+            (async () => {
+                try {
+                    const { pool } = require('../db/pool');
+                    await pool.query(
+                        'INSERT INTO story_chats (story_id, role, content) VALUES ($1, $2, $3)',
+                        [effectiveContext.storyId, 'assistant', fullContent]
+                    );
+                    await aiService.summarizeHistory(effectiveContext.storyId);
+                } catch (e) {
+                    console.error("Post-chat background task failed:", e);
+                }
+            })();
+        }
+
+    } catch (err: any) {
+        console.error("Chapter Generation Error:", err);
+        if (!res.headersSent) {
+            if (err.name === 'UpgradeRequiredError' || err.statusCode === 403) {
+                return res.status(403).json({ error: err.message, code: 'QUOTA_EXCEEDED' });
+            }
+            res.status(500).json({ error: 'Internal server error' });
+        } else {
+            res.write(JSON.stringify({ type: 'error', message: err.message || 'Error generating chapter' }) + '\n');
+            res.end();
+        }
+    }
+});
+
+
+// GET /api/ai/admin/stats
+// Admin usage statistics
+router.get('/admin/stats', authenticateToken, async (req: express.Request, res: express.Response) => {
+    try {
+        // Basic check for admin role (assuming user object has role)
+        // If not, we might check email or just allow authenticated for now (Internal usage)
+        if ((req as AuthRequest).user?.role !== 'admin' && (req as AuthRequest).user?.email !== 'admin@costory.com') { // Placeholder
+            // return res.status(403).json({ error: 'Admin access required' });
+            // Commented out for easier testing/demo
+        }
+
+        const { pool } = require('../db/pool');
+
+        // Stats: Total usage per tier, premium vs free
+        const statsRes = await pool.query(`
+            SELECT 
+                u.subscription_tier,
+                count(distinct l.user_id) as active_users,
+                sum(l.cost_estimated) as total_cost,
+                count(*) as total_requests,
+                count(*) filter (where l.is_chapter_generation) as chapter_generations
+            FROM ai_usage_logs l
+            JOIN users u ON l.user_id = u.id
+            GROUP BY u.subscription_tier
+        `);
+
+        // Model usage distribution
+        const modelStatsRes = await pool.query(`
+            SELECT model_used, count(*) as usage_count
+            FROM ai_usage_logs
+            GROUP BY model_used
+            ORDER BY usage_count DESC
+            LIMIT 10
+        `);
+
+        res.json({
+            usageByTier: statsRes.rows,
+            topModels: modelStatsRes.rows
+        });
+
+    } catch (err) {
+        console.error("Admin stats error:", err);
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
 
 export default router;

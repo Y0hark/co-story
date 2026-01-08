@@ -2,11 +2,14 @@
   <div class="flex flex-col h-full bg-white relative min-h-0">
     <div class="p-3 border-b border-stone-200 shrink-0 transition-colors duration-500" :class="currentTheme.headerGradient">
         <div class="flex items-center justify-between w-full">
-            <h2 class="font-bold font-serif flex items-center gap-2 text-sm transition-colors duration-500" :class="currentTheme.headerText">
-                <Sparkles class="w-4 h-4" />
-                <span>{{ currentModeLabel }}</span>
-                <span class="text-[10px] font-sans uppercase tracking-wider font-normal opacity-70">{{ currentModeTag }}</span>
-            </h2>
+                <div class="flex flex-col">
+                    <h2 class="font-bold font-serif flex items-center gap-2 text-sm transition-colors duration-500" :class="currentTheme.headerText">
+                        <Sparkles class="w-4 h-4" />
+                        <span>{{ currentModeLabel }}</span>
+                        <span class="text-[10px] font-sans uppercase tracking-wider font-normal opacity-70">{{ currentModeTag }}</span>
+                    </h2>
+                    <p class="text-[10px] opacity-60 ml-6 leading-tight font-medium" :class="currentTheme.headerText">{{ currentModeDescription }}</p>
+                </div>
             
             <div class="flex items-center gap-2">
                 <button 
@@ -46,7 +49,19 @@
                     ]"
                 >
                     <div v-if="msg.role === 'user'" class="whitespace-pre-wrap">{{ msg.content }}</div>
-                    <div v-else v-html="renderMarkdown(msg.content)"></div>
+                    <div v-else>
+                         <div v-if="msg.isError" class="flex flex-col gap-2">
+                             <div class="text-rose-600 font-medium prose prose-sm max-w-none" v-html="renderMarkdown(msg.content)"></div>
+                             <button 
+                                @click="retryLastMessage" 
+                                class="self-start flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 text-xs rounded-lg hover:bg-rose-100 transition-colors border border-rose-200"
+                             >
+                                <RefreshCw class="w-3 h-3" />
+                                Retry
+                             </button>
+                         </div>
+                         <div v-else v-html="renderMarkdown(msg.content)"></div>
+                    </div>
                 </div>
             </div>
         </TransitionGroup>
@@ -84,13 +99,17 @@
                 <button
                     v-for="mode in aiModes"
                     :key="mode.value"
-                    @click="setMode(mode.value)"
+                    @click="selectMode(mode)"
                     class="w-full text-left px-3 py-2 text-xs hover:bg-stone-50 flex items-center gap-2"
-                    :class="localMode === mode.value ? 'font-medium bg-stone-50' : 'text-stone-600'"
+                    :class="[
+                        localMode === mode.value ? 'font-medium bg-stone-50' : 'text-stone-600',
+                        (mode as any).locked ? 'opacity-70 grayscale' : ''
+                    ]"
                 >
                     <span class="w-1.5 h-1.5 rounded-full" :class="getThemeForMode(mode.value).accentBg"></span>
                     {{ mode.label }}
-                    <Check v-if="localMode === mode.value" class="w-3 h-3 ml-auto text-teal-600" />
+                    <Lock v-if="(mode as any).locked" class="w-3 h-3 ml-auto text-stone-400" />
+                    <Check v-else-if="localMode === mode.value" class="w-3 h-3 ml-auto text-teal-600" />
                 </button>
             </div>
             
@@ -124,10 +143,12 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { Sparkles, Bot, Send, ChevronDown, Check, RotateCcw } from 'lucide-vue-next'
+import { Sparkles, Bot, Send, ChevronDown, Check, RotateCcw, Lock, RefreshCw } from 'lucide-vue-next'
 import MarkdownIt from 'markdown-it'
+import { useAuthStore } from '../../stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const md = new MarkdownIt({
     html: false,
@@ -147,50 +168,116 @@ const emit = defineEmits<{
 }>()
 
 const renderMarkdown = (text: string) => {
-    return md.render(text)
+    // Strip action blocks before rendering to hide them from UI
+    const cleanText = text.replace(/\[\[\s*ACTION\s*:([\s\S]*?)\]\]/gi, '').trim();
+    return md.render(cleanText)
 }
 
-const allAiModes = [
-    { label: 'Atlas', tag: 'Narrative Coach', value: 'narrative' },
-    { label: 'Sofia', tag: 'Empathetic Partner', value: 'therapeutic' },
-    { label: 'Kai', tag: 'Co-Author', value: 'coauthor' },
-    { label: 'Nora', tag: 'Structural Editor', value: 'structural' }
-]
+// Track word usage to backend
+const trackWordUsage = async (wordCount: number) => {
+    try {
+        const token = localStorage.getItem('token')
+        const response = await fetch('http://localhost:3001/api/usage/track-words', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ wordCount })
+        })
+        
+        if (!response.ok) {
+            throw new Error('Failed to track word usage')
+        }
+        
+        console.log(`[Word Tracking] Successfully tracked ${wordCount} words`)
+    } catch (error) {
+        console.error('[Word Tracking] Error:', error)
+        throw error
+    }
+}
+
+// Imported constants
+import { ASSISTANTS } from '../../config/assistants'
 
 const aiModes = computed(() => {
-    // If story mode is journal, only show therapeutic or allow it.
-    // Spec: "Therapeutic" NOT accessible UNLESS created via Journal.
+    // Filter modes based on story context
+    // If Journal -> Only Sofia (therapeutic)
+    // If Guided -> All Guided modes (Kai, Nora, Atlas)
     
-    // If it's a journal, maybe we limit to ONLY therapeutic or prioritize it?
-    // Let's assume:
-    // 1. If storyMode === 'journal', show 'Therapeutic' (and maybe others or just that?)
-    // 2. If storyMode !== 'journal', FILTER OUT 'Therapeutic'
-    
+    let modes = ASSISTANTS.map(a => ({
+        label: a.name,
+        tag: a.role,
+        value: a.id,
+        description: a.description,
+        locked: a.locked,
+        lockReason: a.lockReason
+    }))
+
     if (props.storyMode === 'journal') {
-        // Just show all? Or usually journals imply therapeutic focus. 
-        // User said: "only way to arrive [at Therapeutic] is by passing through creation of a journal"
-        // So Journal -> Therapeutic available.
-        // Others -> Therapeutic HIDDEN.
-        
-        // Spec update: "remove the other assistants in the Private mode as well leaving just the epathetic partner"
-        return [{ label: 'Sofia', tag: 'Empathetic Partner', value: 'therapeutic' }]
+        return modes.filter(m => m.value === 'therapeutic')
     } else {
-        return allAiModes.filter(m => m.value !== 'therapeutic')
+        return modes.filter(m => m.value !== 'therapeutic')
     }
 })
 
-const localMode = ref('narrative')
+const localMode = ref('coauthor')
 
-// Watch story mode to auto-switch if needed
-// Watch story mode to auto-switch if needed
-watch(() => props.storyMode, (newMode) => {
-    if (newMode === 'journal') {
-        localMode.value = 'therapeutic'
-    } else if (localMode.value === 'therapeutic') {
-        localMode.value = 'narrative'
+// Initialize mode from Context (Persisted Role) OR defaults
+watch(() => props.context?.aiRole, (newRole) => {
+    if (newRole && aiModes.value.find(m => m.value === newRole)) {
+        localMode.value = newRole
+    } else {
+        // Fallback defaults
+        if (props.storyMode === 'journal') {
+            localMode.value = 'therapeutic'
+        } else {
+            localMode.value = 'coauthor'
+        }
     }
 }, { immediate: true })
-const localMessages = ref<{ role: 'user' | 'assistant', content: string }[]>([])
+const localMessages = ref<{ role: 'user' | 'assistant', content: string, isError?: boolean }[]>([])
+
+const personaVoices: Record<string, any> = {
+    narrative: { // Atlas
+        thinking: "Atlas consults the archives...",
+        reading: "Atlas analyzes the Codex...",
+        switching: "Atlas seeks a specialized quill...",
+        error: "The library is crowded right now. Atlas needs a moment."
+    },
+    therapeutic: { // Sofia
+        thinking: "Sofia is listening...",
+        reading: "Sofia reflects on your journey...",
+        switching: "Sofia finds a better way to connect...",
+        error: "Sofia is processing too many emotions individually. Please try again."
+    },
+    coauthor: { // Kai
+        thinking: "Kai is brainstorming...",
+        reading: "Kai reviews the plot points...",
+        switching: "Kai looks for a sharper angle...",
+        error: "Kai is overwhelmed with ideas from other writers. Give him a minute."
+    },
+    structural: { // Nora
+        thinking: "Nora outlines the possibilities...",
+        reading: "Nora checks the structure...",
+        switching: "Nora readjusts her framework...",
+        error: "Nora's blueprint is currently overloaded. Please wait a moment."
+    }
+}
+
+const getPersonaStatus = (mode: string, rawStatus: string) => {
+    const voice = personaVoices[mode] || personaVoices['coauthor']
+    
+    // Check for "Switching" or model names
+    if (rawStatus.toLowerCase().includes('switching') || rawStatus.toLowerCase().includes('model')) {
+        return voice.switching
+    }
+    if (rawStatus.toLowerCase().includes('reading') || rawStatus.toLowerCase().includes('codex')) {
+        return voice.reading
+    }
+    return voice.thinking // Default fallback
+}
+
 
 // Load History
 const loadHistory = async () => {
@@ -290,11 +377,34 @@ const currentTheme = computed(() => getThemeForMode(localMode.value))
 // const currentModeColor = computed(() => getModeColor(localMode.value)) // DEPRECATED
 const currentModeLabel = computed(() => aiModes.value.find(m => m.value === localMode.value)?.label || 'Atlas')
 const currentModeTag = computed(() => aiModes.value.find(m => m.value === localMode.value)?.tag || 'Assistant')
+const currentModeDescription = computed(() => aiModes.value.find(m => m.value === localMode.value)?.description || '')
 
 const setMode = (mode: string) => {
     localMode.value = mode
     showModeMenu.value = false
 }
+
+const selectMode = (mode: any) => {
+    if (mode.locked) {
+        if (confirm(`Atlas is reserved for Storyteller and Architect tiers. Upgrade to unlock?`)) {
+            router.push('/app/subscription')
+        }
+        return
+    }
+    setMode(mode.value)
+}
+
+// Ensure default mode is safe (if Atlas is locked, default to CoAction or similar)
+// We need a watchEffect or onMounted to check initial validity?
+// But localMode is ref('coauthor') now.
+
+watch(() => (authStore.user as any)?.subscription_tier, () => {
+    // If current mode is locked, switch to safe mode
+    const currentModeObj = aiModes.value.find(m => m.value === localMode.value) as any
+    if (currentModeObj && currentModeObj.locked) {
+        localMode.value = 'coauthor' 
+    }
+}, { immediate: true })
 
 
 
@@ -333,7 +443,7 @@ const aiStatusMessage = ref('')
 const processMessage = async (msg: string) => {
     localMessages.value.push({ role: 'user', content: msg })
     isAiThinking.value = true
-    aiStatusMessage.value = 'Thinking...'
+    aiStatusMessage.value = getPersonaStatus(localMode.value, 'thinking')
     scrollToBottom()
     
     try {
@@ -355,16 +465,29 @@ const processMessage = async (msg: string) => {
         if (!res.ok) {
             // Error Handling
              const errData = await res.json().catch(() => ({}))
+             console.log('[Error Debug] Status:', res.status, 'Data:', errData)
+             
              if (res.status === 401) {
                  localStorage.removeItem('token')
                  router.push('/auth/login')
                  return
              }
              if (res.status === 403 && errData.code === 'UPGRADE_REQUIRED') {
+                 console.log('[Error Debug] Upgrade required path')
                  localMessages.value.push({ role: 'assistant', content: "🔒 **Upgrade Required**\n\n" + (errData.error || "Feature limited.") })
+             } else if (res.status === 403 && errData.error && errData.error.includes('limit reached')) {
+                 // Quota limit error with CTA
+                 console.log('[Error Debug] Quota limit path')
+                 const upgradeButton = '\n\n[🚀 Upgrade Now](/subscription)'
+                 localMessages.value.push({ 
+                     role: 'assistant', 
+                     content: "📊 **Limite Mensuelle Atteinte**\n\n" + errData.error + upgradeButton
+                 })
              } else if (res.status === 402) {
+                 console.log('[Error Debug] Insufficient credits path')
                  localMessages.value.push({ role: 'assistant', content: "🪙 **Insufficient Credits**\n\n" + (errData.error || "Please purchase more credits.") })
              } else {
+                 console.log('[Error Debug] Generic error path')
                  localMessages.value.push({ role: 'assistant', content: "Error: " + (errData.error || res.statusText) })
              }
              return;
@@ -375,40 +498,8 @@ const processMessage = async (msg: string) => {
         const decoder = new TextDecoder()
         
         // Character Buffer for smooth animation
-        let charBuffer = ""
-        let isTyping = false
         let assistantMsgIndex = -1
         let fullContent = '' // For action parsing
-
-        // Typewriter function
-        const processBuffer = async () => {
-            if (isTyping) return
-            isTyping = true
-            
-            while (charBuffer.length > 0) {
-                // Determine chunk size based on buffer load to catch up if behind
-                const speed = charBuffer.length > 50 ? 5 : 2;
-                const chunk = charBuffer.slice(0, speed);
-                charBuffer = charBuffer.slice(speed);
-                
-                // Initialize message bubble if needed
-                 if (assistantMsgIndex === -1) {
-                    localMessages.value.push({ role: 'assistant', content: '' })
-                    assistantMsgIndex = localMessages.value.length - 1
-                }
-                
-                if (localMessages.value[assistantMsgIndex]) {
-                    localMessages.value[assistantMsgIndex].content += chunk
-                }
-                scrollToBottom()
-                await new Promise(r => setTimeout(r, 10)) // Smooth delay
-            }
-            if (assistantMsgIndex !== -1 && localMessages.value[assistantMsgIndex]) {
-                 // Ensure we update with final content text (minus actions) if needed, 
-                 // but for now, we trust the buffer.
-            }
-            isTyping = false
-        }
 
         while (true) {
             const { done, value } = await reader.read()
@@ -421,21 +512,50 @@ const processMessage = async (msg: string) => {
                 try {
                     const data = JSON.parse(line)
                     if (data.type === 'status') {
-                        aiStatusMessage.value = data.message || 'Thinking...'
+                        aiStatusMessage.value = getPersonaStatus(localMode.value, data.message || '')
                     } else if (data.type === 'content') {
                         const textChunk = data.data || ''
                         fullContent += textChunk
-                        charBuffer += textChunk
-                        processBuffer() // Trigger typewriter
+                        // charBuffer += textChunk 
+                        // processBuffer() // Trigger typewriter
+                        
+                        // DIRECT APPEND (Typewriter Disabled for debugging/correctness)
+                        if (assistantMsgIndex === -1) {
+                            localMessages.value.push({ role: 'assistant', content: '' })
+                            assistantMsgIndex = localMessages.value.length - 1
+                        }
+                        if (assistantMsgIndex !== -1 && localMessages.value[assistantMsgIndex]) {
+                            localMessages.value[assistantMsgIndex]!.content += textChunk
+                        }
+                        scrollToBottom()
                     } else if (data.type === 'error') {
                          if (assistantMsgIndex === -1) {
-                             localMessages.value.push({ role: 'assistant', content: '' })
+                             let errorMsg = '';
+                             
+                             // Check for quota limit errors
+                             if (data.message && data.message.includes('limit reached')) {
+                                 errorMsg = `📊 **Limite Mensuelle Atteinte**
+
+${data.message}
+
+[🚀 Upgrade Now](/app/subscription)`;
+                             } 
+                             // Check for daily free limit
+                             else if (data.message && data.message.includes('Daily Free Limit')) {
+                                 errorMsg = "🛑 **Daily Limit Reached**\n\nOpenRouter free tier limit exceeded for today. Please wait or add credits.";
+                             }
+                             // Fallback to persona voice
+                             else {
+                                 const voice = personaVoices[localMode.value] || personaVoices['coauthor']
+                                 errorMsg = voice.error;
+                             }
+                             
+                             localMessages.value.push({ role: 'assistant', content: errorMsg, isError: true })
                              assistantMsgIndex = localMessages.value.length - 1
                         }
-                        const err = `\n[Error: ${data.message}]`;
-                        fullContent += err
-                        charBuffer += err
-                        processBuffer()
+                        // We might still want to log the raw error for debugging but hide it from user
+                        console.warn("Backend Error Stream:", data.message)
+                        // Don't append raw error to content if we want to be friendly
                     }
                 } catch (e) {
                     console.warn("Stream parse error", e)
@@ -443,45 +563,118 @@ const processMessage = async (msg: string) => {
             }
         }
         
-        // Ensure buffer finishes
-        while (charBuffer.length > 0) {
-            await new Promise(r => setTimeout(r, 50))
-        }
+        // Buffer/Typewriter removed, proceed immediately
 
         // Post-processing: Parse Actions from accumulated content
-        const actionRegex = /\[\[\s*ACTION\s*:\s*(\{[\s\S]*?\})\s*\]\]/i
-        const match = fullContent.match(actionRegex)
+        // We look at the actual displayed message to ensure we clean what the user sees
+        let currentText = fullContent
+        if (assistantMsgIndex !== -1 && localMessages.value[assistantMsgIndex]) {
+            currentText = localMessages.value[assistantMsgIndex]!.content
+        }
+
+        // Use a broader regex to capture the whole block first for robust removal
+        const actionBlockRegex = /\[\[\s*ACTION\s*:([\s\S]*?)\]\]/gi
+        let match;
         
-        if (match && match[1]) {
-            try {
-                let jsonStr = match[1]
+        while ((match = actionBlockRegex.exec(currentText)) !== null) {
+             const fullMatch = match[0];
+             const rawContent = match[1] || "";
+
+             // Remove from text immediately
+             currentText = currentText.replace(fullMatch, '').trim();
+             
+             // Update UI immediately
+             if (assistantMsgIndex !== -1 && localMessages.value[assistantMsgIndex]) {
+                 localMessages.value[assistantMsgIndex]!.content = currentText;
+             }
+
+             if (!rawContent.trim()) continue;
+
+             // Parse and Emit
+             try {
+                // Try to find the JSON object 'check' inside the raw content
+                // We look for the first '{' and the last '}'
+                const firstBrace = rawContent.indexOf('{');
+                const lastBrace = rawContent.lastIndexOf('}');
+                
+                let jsonString = rawContent;
+                if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                    jsonString = rawContent.substring(firstBrace, lastBrace + 1);
+                }
+
                 let actionData;
                 try {
-                    actionData = JSON.parse(jsonStr)
+                    actionData = JSON.parse(jsonString);
                 } catch (e) {
-                     console.warn("First JSON parse failed, attempting newline fix...", e)
-                     const fixedJson = jsonStr.replace(/\n/g, '\\n')
-                     actionData = JSON.parse(fixedJson)
+                     console.warn("First JSON parse failed, attempting repairs...", e);
+                     
+                     // 1. Fix newlines 
+                     let fixedJson = jsonString.replace(/\n/g, '\\n');
+                     
+                     try {
+                        actionData = JSON.parse(fixedJson);
+                     } catch (e2) {
+                        // 2. Fix unquoted keys (e.g. { type: "..." } -> { "type": "..." })
+                        // Regex looks for "word:" that isn't preceded by a quote
+                        fixedJson = fixedJson.replace(/([{,]\s*)([a-zA-Z0-9_]+?)\s*:/g, '$1"$2":');
+                        actionData = JSON.parse(fixedJson);
+                     }
                 }
-                emit('ai-action', actionData)
                 
-                // Hide Action from UI
-                const newContent = fullContent.replace(match[0], '').trim()
-                if (localMessages.value[assistantMsgIndex]) {
-                    localMessages.value[assistantMsgIndex].content = newContent
+                // Track word count for chapter-related actions
+                if (actionData && (actionData.type === 'update_chapter_content' || 
+                    actionData.type === 'append_chapter_content' || 
+                    actionData.type === 'create_chapter')) {
+                    const content = actionData.data?.content || "";
+                    const wordCount = content.split(/\s+/).filter((w: string) => w.length > 0).length;
+                    
+                    if (wordCount > 0) {
+                        // Track usage asynchronously (don't block UI)
+                        trackWordUsage(wordCount).catch(err => {
+                            console.warn('Failed to track word usage:', err);
+                        });
+                    }
                 }
-            } catch (e) {
-                console.error("Failed to parse AI action", e)
-            }
+                
+                emit('ai-action', actionData);
+             } catch (e) {
+                console.error("Failed to parse AI action content", e);
+             }
+             actionBlockRegex.lastIndex = 0; 
         }
 
     } catch (e: any) {
         console.error("AI Request Failed", e)
-        localMessages.value.push({ role: 'assistant', content: "An error occurred." })
+        // Try to extract actual error message, fallback to persona voice
+        let errorMessage = e.message || e.toString()
+        
+        // If it's a generic error, use persona voice
+        if (!errorMessage || errorMessage === '[object Object]') {
+            const voice = personaVoices[localMode.value] || personaVoices['coauthor']
+            errorMessage = voice.error
+        }
+        
+        localMessages.value.push({ 
+            role: 'assistant', 
+            content: errorMessage, 
+            isError: true 
+        })
     } finally {
         isAiThinking.value = false
         aiStatusMessage.value = ''
         scrollToBottom()
+    }
+}
+
+const retryLastMessage = () => {
+    // Find last user message
+    const lastUserMsg = [...localMessages.value].reverse().find(m => m.role === 'user')
+    if (lastUserMsg) {
+        // Remove the error message (last one)
+        if (localMessages.value[localMessages.value.length - 1]?.isError) {
+             localMessages.value.pop()
+        }
+        processMessage(lastUserMsg.content)
     }
 }
 </script>

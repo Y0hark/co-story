@@ -1,5 +1,19 @@
 <template>
   <div class="space-y-6 pb-24">
+    <!-- Subscription Banner -->
+    <div class="bg-white border border-stone-200 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow group">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <h2 class="text-xl font-bold font-serif text-stone-900">Novice Plan</h2>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600 uppercase tracking-widest border border-stone-200">Free</span>
+            </div>
+            <p class="text-stone-500 text-sm">Unlock more chapters and advanced AI models.</p>
+        </div>
+        <button @click="$router.push('/app/subscription')" class="px-5 py-2.5 bg-stone-900 hover:bg-teal-600 text-white rounded-lg text-sm font-bold shadow-sm transition-all transform hover:-translate-y-0.5 whitespace-nowrap">
+            Upgrade Plan
+        </button>
+    </div>
+
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       
@@ -14,15 +28,40 @@
         </div>
       </div>
 
-      <!-- Weekly Progress -->
-       <div class="bg-white border border-stone-200 rounded-xl p-6">
-        <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center mb-4">
-          <Activity class="w-5 h-5 text-amber-700" />
+      <!-- Monthly AI Usage -->
+       <div class="bg-white border border-stone-200 rounded-xl p-6 relative overflow-hidden">
+        <div class="flex items-start justify-between mb-2">
+            <div>
+                <h3 class="text-lg font-bold font-serif text-stone-900">Monthly Usage</h3>
+                <p class="text-stone-500 text-xs">Resets in {{ stats?.subscription?.daysUntilReset || 30 }} days</p>
+            </div>
+            <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <Activity class="w-5 h-5 text-amber-700" />
+            </div>
         </div>
-        <h3 class="text-lg font-bold font-serif text-stone-900">Weekly Progress</h3>
-        <p class="text-stone-500 text-sm mt-2">
-            <span class="font-bold text-stone-800">{{ stats?.wordsWritten || 0 }}</span> words written this week.
-        </p>
+
+        <div class="mt-4">
+            <div class="flex items-end justify-between mb-1">
+                <span class="text-2xl font-bold text-stone-900">{{ (stats?.subscription?.wordsUsed || 0).toLocaleString() }}</span>
+                <span class="text-xs text-stone-500 font-medium mb-1">of {{ (stats?.subscription?.wordLimit || 3000).toLocaleString() }} words</span>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-stone-100 rounded-full h-2">
+                <div 
+                    class="h-2 rounded-full transition-all duration-1000 ease-out"
+                    :class="(stats?.subscription?.usagePercentage || 0) > 90 ? 'bg-rose-500' : 'bg-teal-600'"
+                    :style="{ width: `${stats?.subscription?.usagePercentage || 0}%` }"
+                ></div>
+            </div>
+        </div>
+
+        <!-- Upgrade CTA if low on credits -->
+        <div v-if="(stats?.subscription?.usagePercentage || 0) > 80" class="mt-4 pt-3 border-t border-stone-100">
+             <button @click="$router.push('/app/subscription')" class="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1">
+                Running low? Upgrade now <ArrowRight class="w-3 h-3" />
+             </button>
+        </div>
       </div>
 
       <!-- Total Stats -->
@@ -122,11 +161,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { PenTool, Activity, BookOpen, Heart, MessageCircle, Lock, FileText, Globe } from 'lucide-vue-next'
+import { PenTool, Activity, BookOpen, Heart, MessageCircle, Lock, FileText, Globe, ArrowRight } from 'lucide-vue-next'
+
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
-// Mock User ID (matches backend)
-const USER_ID = '11111111-1111-1111-1111-111111111111'
+const authStore = useAuthStore()
 
 const stories = ref<any[]>([])
 const stats = ref<any>(null)
@@ -156,13 +196,20 @@ const filteredStories = computed(() => {
 
 const fetchDashboardData = async () => {
     try {
+        const userId = (authStore.user as any)?.id
+        if (!userId) return
+
         loading.value = true
         // Fetch Stories
-        const storiesRes = await fetch('http://localhost:3001/api/stories/my')
+        const storiesRes = await fetch('http://localhost:3001/api/stories/my', {
+             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
         if (storiesRes.ok) stories.value = await storiesRes.json()
 
         // Fetch Stats
-        const statsRes = await fetch(`http://localhost:3001/api/users/${USER_ID}/stats`)
+        const statsRes = await fetch(`http://localhost:3001/api/users/${userId}/stats`, {
+             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        })
         if (statsRes.ok) stats.value = await statsRes.json()
     } catch (e) {
         console.error("Failed to load dashboard data", e)

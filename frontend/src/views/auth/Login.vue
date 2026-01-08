@@ -66,7 +66,8 @@ const handleLogin = async () => {
     loading.value = true;
     try {
         await authStore.login({ email: email.value, password: password.value });
-        router.push('/');
+        await authStore.login({ email: email.value, password: password.value });
+        router.push('/app'); // Redirect to main app
     } catch (err: any) {
         console.error(err);
         error.value = err.response?.data?.error || 'Invalid credentials';

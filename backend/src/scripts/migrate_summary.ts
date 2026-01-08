@@ -1,5 +1,5 @@
 
-import { pool } from './src/db/pool';
+import { pool } from '../db/pool';
 
 async function migrate() {
     const client = await pool.connect();

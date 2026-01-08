@@ -65,6 +65,12 @@ const router = createRouter({
                     name: 'Library',
                     component: () => import('../views/Library.vue'),
                     meta: { title: 'My Library' }
+                },
+                {
+                    path: 'subscription',
+                    name: 'Subscription',
+                    component: () => import('../views/Subscription.vue'),
+                    meta: { title: 'Subscription & Billing' }
                 }
             ]
         }

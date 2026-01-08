@@ -17,9 +17,9 @@
             <div class="px-4 py-3 border-b border-stone-100 bg-stone-50">
                 <div class="flex items-center gap-2">
                     <button 
-                        @click="router.push('/app/home')"
+                        @click="router.push('/app/dashboard')"
                         class="text-stone-400 hover:text-stone-600 transition-colors"
-                        title="Back to Home"
+                        title="Back to Dashboard"
                     >
                         <ArrowLeft class="w-4 h-4" />
                     </button>
@@ -46,13 +46,39 @@
                     <span class="text-[10px] text-stone-400 uppercase tracking-widest font-bold">Status</span>
                 </div>
                 
-                <textarea 
-                    v-if="story"
-                    v-model="story.description"
-                    rows="2"
-                    placeholder="Story description..."
-                    class="w-full bg-stone-50 border-none rounded-lg text-xs text-stone-600 placeholder:text-stone-400 mt-3 p-2 resize-none focus:ring-1 focus:ring-teal-500"
-                ></textarea>
+                <div v-if="story" class="mt-3 space-y-3">
+                     <!-- Genre & Tone -->
+                    <div class="grid grid-cols-2 gap-2">
+                         <BaseSelect 
+                            v-model="story.genre" 
+                            :options="genreOptions"
+                            class="text-xs"
+                            placeholder="Genre"
+                            @change="saveStory"
+                        />
+                         <BaseSelect 
+                            v-model="story.tone" 
+                            :options="toneOptions"
+                            class="text-xs"
+                            placeholder="Tone"
+                            @change="saveStory"
+                        />
+                    </div>
+
+                    <!-- Enhanced Description -->
+                    <div class="relative group">
+                        <textarea 
+                            v-model="story.description"
+                            rows="3"
+                            placeholder="Story description..."
+                            class="w-full bg-white border border-stone-200 rounded-lg text-sm text-stone-700 placeholder:text-stone-400 p-3 resize-y focus:ring-1 focus:ring-teal-500 focus:border-teal-500 shadow-sm transition-all"
+                            @blur="saveStory"
+                        ></textarea>
+                        <div class="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                             <span class="text-[10px] text-stone-400 bg-white/80 px-1 rounded">Auto-saved</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="p-4 border-b border-stone-200 flex items-center justify-between shrink-0 bg-white">
                 <h2 class="font-bold font-serif text-stone-900 text-sm">Chapters</h2>
@@ -327,6 +353,10 @@ import WorldPanel from '../../components/studio/WorldPanel.vue'
 import BaseSelect from '../../components/ui/BaseSelect.vue'
 import TutorialTip from '../../components/ui/TutorialTip.vue'
 import BaseModal from '../../components/ui/BaseModal.vue'
+import { GENRES, TONES } from '../../config/storyOptions'
+
+const genreOptions = GENRES.map(g => ({ label: g, value: g }))
+const toneOptions = TONES.map(t => ({ label: t, value: t }))
 
 const route = useRoute()
 const router = useRouter()
@@ -448,7 +478,10 @@ const aiContext = computed(() => {
         // Include Summaries for AI
         summaryStory: story.value?.summary || null,
         summaryPreviousChapter,
-        summaryRecentContext
+        summaryRecentContext,
+        aiRole: story.value?.ai_role, // Pass persisted AI role
+        genre: story.value?.genre,
+        tone: story.value?.tone
     }
 })
 
@@ -526,7 +559,9 @@ const saveStory = async () => {
                  title: story.value.title,
                  status: story.value.status,
                  description: story.value.description,
-                 summary: story.value.summary // Include summary
+                 summary: story.value.summary,
+                 genre: story.value.genre, // Save Genre
+                 tone: story.value.tone // Save Tone
              })
         })
     } catch (e) {

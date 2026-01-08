@@ -1,5 +1,6 @@
 import express from 'express';
 import { pool } from '../db/pool';
+import { subscriptionService } from '../services/subscriptionService';
 
 const router = express.Router();
 
@@ -90,7 +91,23 @@ router.get('/:id/stats', async (req, res) => {
         const written = writtenStatsRes.rows[0];
         const read = readStatsRes.rows[0];
 
-        // 3. Calculate "Self Healing" Time (Private writing)
+        // 3. Get Subscription & Usage
+        const { tier, usage } = await subscriptionService.getUsage(id);
+
+        // Calculate limits and days remaining
+        const limits = {
+            'free': 3000,
+            'tier1': 90000,
+            'tier2': 300000,
+            'tier3': 900000
+        };
+        const wordLimit = limits[tier as keyof typeof limits] || 3000;
+
+        const now = new Date();
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const daysUntilReset = Math.ceil((nextMonth.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        // 4. Calculate "Self Healing" Time (Private writing)
         // Heuristic: avg typing speed 20 wpm for creative thought process? 
         // Or maybe strictly "Writing Time". Let's use 20wpm as a slow, thoughtful pace.
         const privateWords = parseInt(written.private_words, 10);
@@ -106,7 +123,16 @@ router.get('/:id/stats', async (req, res) => {
             wordsRead: parseInt(read.words_read, 10) || 0,
             chaptersRead: parseInt(read.chapters_read, 10) || 0,
 
-            timeHealingMinutes: healingMinutes
+            timeHealingMinutes: healingMinutes,
+
+            // Subscription Stats
+            subscription: {
+                tier,
+                wordLimit,
+                wordsUsed: usage.words_generated,
+                daysUntilReset,
+                usagePercentage: Math.min(100, Math.round((usage.words_generated / wordLimit) * 100))
+            }
         });
     } catch (err) {
         console.error(err);

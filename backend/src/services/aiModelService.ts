@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 class AIModelService {
     private models: Record<string, AIModelConfig> = { ...LISTED_MODELS };
     private healthyModels: Set<string> = new Set(Object.keys(LISTED_MODELS));
+    private rateLimitBlacklist: Map<string, number> = new Map(); // ModelID -> ExpiryTimestamp
 
     constructor() {
         // Optimistically fetch latest data from OpenRouter on boot
@@ -34,8 +35,6 @@ class AIModelService {
                         completion: parseFloat(remote.pricing.completion) * 1000000
                     };
                     this.models[remote.id].contextLength = remote.context_length;
-
-                    // Also partial name update if we want? nah, keep friendly name.
                 }
             }
             console.log("AI Model data updated.");
@@ -49,16 +48,37 @@ class AIModelService {
     }
 
     /**
+     * Marks a model as rate-limited for 24 hours.
+     */
+    public markModelAsRateLimited(modelId: string) {
+        // 24 hours from now
+        const expiry = Date.now() + (24 * 60 * 60 * 1000);
+        this.rateLimitBlacklist.set(modelId, expiry);
+        console.log(`Model ${modelId} pushed to rate-limit blacklist until ${new Date(expiry).toISOString()}`);
+    }
+
+    public isRateLimited(modelId: string): boolean {
+        const expiry = this.rateLimitBlacklist.get(modelId);
+        if (!expiry) return false;
+        if (Date.now() > expiry) {
+            this.rateLimitBlacklist.delete(modelId);
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * selection logic:
      * 1. Get models for tier.
-     * 2. Filter out excluded models (e.g. failed ones).
+     * 2. Filter out excluded models (e.g. failed ones OR rate-limited ones).
      * 3. Return the best one (first one).
      */
     public getBestModel(tier: string = 'free', excludedIds: string[] = []): AIModelConfig {
         const candidates = (MODEL_TIERS as any)[tier] || MODEL_TIERS['free'];
 
         for (const modelId of candidates) {
-            if (!excludedIds.includes(modelId)) {
+            // Check session exclusions AND global blacklist
+            if (!excludedIds.includes(modelId) && !this.isRateLimited(modelId)) {
                 // Return valid config if exists
                 if (this.models[modelId]) {
                     return this.models[modelId];
@@ -66,7 +86,14 @@ class AIModelService {
             }
         }
 
-        // Fallback: If all unavailable, return the first one anyway to try, or default to free
+        // Fallback: If all unavailable, specifically find one that is NOT blacklisted if possible
+        for (const modelId of candidates) {
+            if (this.models[modelId] && !this.isRateLimited(modelId)) {
+                return this.models[modelId];
+            }
+        }
+
+        // If EVERYTHING is blacklisted/excluded, just return the default fallback to try our luck
         const fallbackId = candidates[0] || 'google/gemini-2.0-flash-exp:free';
         return this.models[fallbackId] || LISTED_MODELS['google/gemini-2.0-flash-exp:free'];
     }

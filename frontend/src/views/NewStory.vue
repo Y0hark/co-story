@@ -8,78 +8,62 @@
        <p class="text-stone-500">{{ stepDescription }}</p>
     </div>
 
-    <!-- Step 1: Mode Selection -->
-    <div v-if="step === 1" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Option 1: Guided -->
+    <!-- Step 1: Main Path Selection -->
+    <div v-if="step === 1" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Path 1: Co-Creation -->
         <div 
-            class="bg-white border border-stone-200 rounded-xl p-6 hover:border-teal-500/50 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden"
-            @click="selectMode('guided')"
+            class="bg-white border border-stone-200 rounded-xl p-8 hover:border-teal-500/50 hover:shadow-lg cursor-pointer transition-all group relative overflow-hidden"
+            @click="selectPath('guided')"
         >
-             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Sparkles class="w-24 h-24 text-teal-600" />
+             <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <Sparkles class="w-40 h-40 text-teal-600" />
             </div>
-            <div class="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center mb-4 text-teal-600">
-                <Sparkles class="w-6 h-6" />
+            <div class="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mb-6 text-teal-600">
+                <Sparkles class="w-7 h-7" />
             </div>
-            <h3 class="text-lg font-bold text-stone-900 mb-2">Guided Creation</h3>
-            <p class="text-sm text-stone-500 leading-relaxed">
-                Define your themes, topics, and goals. Let AI structure the perfect starting point for you.
+            <h3 class="text-2xl font-serif font-bold text-stone-900 mb-3">Co-Creation</h3>
+            <p class="text-stone-500 leading-relaxed mb-6">
+                Collaborate with our squad of specialized AI assistants. Brainstorm ideas, structure your plot, or get help writing scenes.
             </p>
+            
+            <!-- Assistant Preview -->
+            <div class="flex items-center -space-x-3">
+                <div v-for="agent in coCreationAssistants" :key="agent.id" 
+                    class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold shadow-sm"
+                    :class="[agent.avatarBg, agent.avatarText]"
+                    :title="agent.name"
+                >
+                    {{ agent.name[0] }}
+                </div>
+            </div>
         </div>
 
-        <!-- Option 2: Blank Page -->
+        <!-- Path 2: Personal Journal -->
         <div 
-            class="bg-white border border-stone-200 rounded-xl p-6 hover:border-teal-500/50 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden"
-             @click="selectMode('blank')"
+            class="bg-stone-50 border border-stone-200 rounded-xl p-8 hover:border-amber-500/50 hover:bg-amber-50/50 hover:shadow-lg cursor-pointer transition-all group relative overflow-hidden"
+             @click="selectPath('journal')"
         >
-            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <FileText class="w-24 h-24 text-stone-600" />
+             <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <HeartHandshake class="w-40 h-40 text-amber-600" />
             </div>
-            <div class="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4 text-stone-600">
-                <FileText class="w-6 h-6" />
+            <div class="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center mb-6 text-amber-700">
+                <HeartHandshake class="w-7 h-7" />
             </div>
-            <h3 class="text-lg font-bold text-stone-900 mb-2">Blank Page</h3>
-            <p class="text-sm text-stone-500 leading-relaxed">
-                Start from scratch with a clean slate. Perfect if you already know exactly what to write.
+            <h3 class="text-2xl font-serif font-bold text-stone-900 mb-3">Personal Journal</h3>
+            <p class="text-stone-500 leading-relaxed mb-6">
+                A private, safe space for reflection. Sofia will guide you through your thoughts with empathy and zero judgement.
             </p>
-        </div>
-
-        <!-- Option 3: Import -->
-        <div 
-            class="bg-white border border-stone-200 rounded-xl p-6 hover:border-teal-500/50 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden"
-             @click="selectMode('import')"
-        >
-             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Upload class="w-24 h-24 text-stone-600" />
+            
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold shadow-sm bg-amber-100 text-amber-600">
+                    S
+                </div>
+                <span class="text-sm font-medium text-amber-800">Sofia • Empathetic Partner</span>
             </div>
-            <div class="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center mb-4 text-stone-600">
-                <Upload class="w-6 h-6" />
-            </div>
-            <h3 class="text-lg font-bold text-stone-900 mb-2">Import Existing</h3>
-            <p class="text-sm text-stone-500 leading-relaxed">
-                Bring your draft. We'll help you refine, translate, or continue it.
-            </p>
-        </div>
-
-        <!-- Option 4: Therapeutic / Journaling -->
-        <div 
-            class="bg-stone-50 border border-stone-200 rounded-xl p-6 hover:border-amber-500/50 hover:bg-amber-50/50 hover:shadow-md cursor-pointer transition-all group relative overflow-hidden"
-             @click="selectMode('journal')"
-        >
-             <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <HeartHandshake class="w-24 h-24 text-amber-600" />
-            </div>
-            <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-4 text-amber-700">
-                <HeartHandshake class="w-6 h-6" />
-            </div>
-            <h3 class="text-lg font-bold text-stone-900 mb-2">Personal Journal</h3>
-            <p class="text-sm text-stone-500 leading-relaxed">
-                A private space for reflection. The AI acts as an empathetic therapist to guide your thoughts.
-            </p>
         </div>
     </div>
 
-    <!-- Step 2: Configuration & AI Role -->
+    <!-- Step 2: Configuration & Agent Selection -->
     <div v-else-if="step === 2" class="max-w-2xl mx-auto space-y-8 animate-fade-in-up">
         
         <!-- Private Mode Indicator -->
@@ -88,105 +72,93 @@
             <span><strong>Private Session:</strong> This content is encrypted and will strictly never be published or shared.</span>
         </div>
         
-        <!-- Guided Form Fields -->
-        <div v-if="config.mode === 'guided'" class="space-y-6 bg-white p-8 rounded-xl border border-stone-200 shadow-sm">
+        <!-- Config Fields -->
+        <div class="space-y-6 bg-white p-8 rounded-xl border border-stone-200 shadow-sm">
             <div>
-                <label class="block text-sm font-medium text-stone-700 mb-2">Story Title</label>
+                <label class="block text-sm font-medium text-stone-700 mb-2">Title</label>
                 <input 
                     v-model="config.title"
                     type="text"
                     class="w-full rounded-lg border-stone-200 bg-stone-50 p-3 text-stone-900 focus:border-teal-500 focus:ring-teal-500"
-                    placeholder="The Chronicles of..."
+                    placeholder="Enter a title..."
                 />
             </div>
             
-            <div>
-                <label class="block text-sm font-medium text-stone-700 mb-2">Story Concept / Topic</label>
+            <div v-if="config.mode === 'guided'">
+                <label class="block text-sm font-medium text-stone-700 mb-2">Topic / Concept</label>
                 <textarea 
                     v-model="config.topic"
                     rows="3"
                     class="w-full rounded-lg border-stone-200 bg-stone-50 p-3 text-stone-900 focus:border-teal-500 focus:ring-teal-500"
-                    placeholder="e.g. A cyberpunk detective story set in Neo-Tokyo regarding a missing android..."
+                    placeholder="What would you like to create today?"
                 ></textarea>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
+            <div v-if="config.mode === 'guided'" class="grid grid-cols-2 gap-6">
                  <div>
-                    <label class="block text-sm font-medium text-stone-700 mb-2">Genre / Theme</label>
+                    <label class="block text-sm font-medium text-stone-700 mb-2">Genre</label>
                     <BaseSelect 
                         v-model="config.genre"
-                        :options="[
-                            { label: 'Sci-Fi', value: 'Sci-Fi' },
-                            { label: 'Fantasy', value: 'Fantasy' },
-                            { label: 'Mystery', value: 'Mystery' },
-                            { label: 'Romance', value: 'Romance' },
-                            { label: 'Non-Fiction', value: 'Non-Fiction' }
-                        ]"
+                        :options="genreOptions"
                     />
                 </div>
                  <div>
-                    <label class="block text-sm font-medium text-stone-700 mb-2">Tone / Style</label>
+                    <label class="block text-sm font-medium text-stone-700 mb-2">Tone</label>
                     <BaseSelect 
                         v-model="config.tone"
-                        :options="[
-                            { label: 'Dark & Gritty', value: 'Dark & Gritty' },
-                            { label: 'Light & Humorous', value: 'Light & Humorous' },
-                            { label: 'Formal & Academic', value: 'Formal & Academic' },
-                            { label: 'Poetic & Lyrical', value: 'Poetic & Lyrical' }
-                        ]"
+                        :options="toneOptions"
                     />
                 </div>
             </div>
         </div>
 
-        <div v-else-if="config.mode === 'import'" class="bg-white p-8 rounded-xl border border-stone-200 shadow-sm">
-             <label class="block text-sm font-medium text-stone-700 mb-2">Paste your draft</label>
-             <textarea 
-                v-model="config.content"
-                rows="6"
-                class="w-full rounded-lg border-stone-200 bg-stone-50 p-3 text-stone-900 focus:border-teal-500 focus:ring-teal-500"
-                placeholder="Paste your existing content here..."
-            ></textarea>
-        </div>
-
-        <!-- AI Role Selection -->
-        <div class="bg-white p-8 rounded-xl border border-stone-200 shadow-sm">
+        <!-- Squad Selection (Only for Guided/Co-Creation) -->
+        <div v-if="config.mode === 'guided'" class="bg-white p-8 rounded-xl border border-stone-200 shadow-sm">
             <h3 class="text-lg font-bold text-stone-900 mb-4 flex items-center gap-2">
-                <Bot class="w-5 h-5 text-teal-600" /> AI Collaboration Style
+                <Bot class="w-5 h-5 text-teal-600" /> Choose your Partner
             </h3>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div v-if="config.mode !== 'journal'"
-                    class="p-4 rounded-lg border-2 cursor-pointer transition-all"
-                    :class="config.aiRole === 'writer' ? 'border-teal-500 bg-teal-50' : 'border-stone-100 hover:border-stone-300'"
-                    @click="config.aiRole = 'writer'"
+            <div class="grid grid-cols-1 gap-4">
+                <div v-for="agent in coCreationAssistants" :key="agent.id"
+                    class="p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 relative overflow-hidden"
+                    :class="config.aiRole === agent.id ? 'border-teal-500 bg-stone-50' : 'border-stone-100 hover:border-stone-200'"
+                    @click="agent.locked ? null : (config.aiRole = agent.id)"
                 >
-                    <div class="font-bold text-stone-900 mb-1">Kai • Co-Writer</div>
-                    <p class="text-xs text-stone-500">I'll provide milestones, you write the content. I fill in the blanks.</p>
-                </div>
+                    <div 
+                        class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-lg font-bold"
+                        :class="[agent.avatarBg, agent.avatarText]"
+                    >
+                        {{ agent.name[0] }}
+                    </div>
+                    
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-1">
+                            <h4 class="font-bold text-stone-900">{{ agent.name }}</h4>
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-white border border-stone-200 text-stone-500">{{ agent.role }}</span>
+                            <Lock v-if="agent.locked" class="w-3 h-3 text-stone-400" />
+                        </div>
+                        <p class="text-sm text-stone-500 leading-snug">{{ agent.description }}</p>
+                    </div>
 
-                <div v-if="config.mode !== 'journal'"
-                    class="p-4 rounded-lg border-2 cursor-pointer transition-all"
-                    :class="config.aiRole === 'editor' ? 'border-teal-500 bg-teal-50' : 'border-stone-100 hover:border-stone-300'"
-                    @click="config.aiRole = 'editor'"
-                >
-                    <div class="font-bold text-stone-900 mb-1">Nora • Editor</div>
-                    <p class="text-xs text-stone-500">I write the draft. You correct grammar, polish tone, and fix consistency.</p>
-                </div>
-
-                <div v-if="config.mode === 'journal'"
-                    class="p-4 rounded-lg border-2 border-amber-500 bg-amber-50 cursor-pointer transition-all col-span-2"
-                    @click="config.aiRole = 'therapist'"
-                >
-                    <div class="font-bold text-stone-900 mb-1">Sofia • Empathetic Partner</div>
-                    <p class="text-xs text-stone-500">I listen without judgement, ask reflective questions, and help you process your thoughts. I never judge or critique.</p>
+                    <div v-if="config.aiRole === agent.id" class="absolute top-4 right-4 text-teal-600">
+                        <Check class="w-5 h-5" />
+                    </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Journal Confirmation (Sofia) -->
+        <div v-if="config.mode === 'journal'" class="bg-amber-50/50 p-6 rounded-xl border border-amber-100 flex items-start gap-4">
+             <div class="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold flex-shrink-0">S</div>
+             <div>
+                 <h4 class="font-bold text-amber-900 mb-1">Collaborating with Sofia</h4>
+                 <p class="text-sm text-amber-800">Sofia is ready to listen. Your journal is private and secure.</p>
+             </div>
         </div>
 
         <button @click="createStory" class="w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2" :class="config.mode === 'journal' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-teal-700 hover:bg-teal-800'">
             <Sparkles class="w-5 h-5" />
-            {{ config.mode === 'journal' ? 'Start Private Journal' : 'Create Story' }}
+            {{ config.mode === 'journal' ? 'Start Journaling' : 'Enter Studio' }}
         </button>
     </div>
   </div>
@@ -195,51 +167,58 @@
 <script setup lang="ts">
 import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { Sparkles, FileText, Upload, ArrowLeft, Bot, HeartHandshake, Lock } from 'lucide-vue-next'
+import { Sparkles, ArrowLeft, Bot, HeartHandshake, Lock, Check } from 'lucide-vue-next'
 import BaseSelect from '../components/ui/BaseSelect.vue'
+import { ASSISTANTS } from '../config/assistants'
+import { GENRES, TONES } from '../config/storyOptions'
 
 const router = useRouter()
 const step = ref(1)
 
+const genreOptions = GENRES.map(g => ({ label: g, value: g }))
+const toneOptions = TONES.map(t => ({ label: t, value: t }))
+
 const config = reactive({
-    mode: '', // 'guided', 'blank', 'import', 'journal'
+    mode: '', 
     title: '',
     topic: '',
-    genre: 'Sci-Fi',
-    tone: 'Dark & Gritty',
+    genre: 'General',
+    tone: 'Casual',
     content: '',
-    aiRole: 'writer', // 'writer', 'editor', 'therapist'
+    aiRole: 'coauthor', 
     isPrivate: false
 })
 
+const coCreationAssistants = computed(() => ASSISTANTS.filter(a => a.mode === 'guided'))
+
 const stepTitle = computed(() => {
-    if (step.value === 1) return "How would you like to start?"
-    return "Configure your Story"
+    if (step.value === 1) return "Welcome to CoStory"
+    return config.mode === 'journal' ? "Setup your Journal" : "Assemble your Squad"
 })
 
 const stepDescription = computed(() => {
-    if (step.value === 1) return "Choose the best way to begin your new masterpiece."
-    return "Tell us a bit more so we can set up the perfect environment."
+    if (step.value === 1) return "Choose how you want to collaborate with AI today."
+    return "Customize your experience before we begin."
 })
 
-const selectMode = (mode: string) => {
+const selectPath = (mode: string) => {
     config.mode = mode
     step.value = 2
     
-    // Set defaults based on mode
     if (mode === 'journal') {
-        config.aiRole = 'therapist'
+        config.aiRole = 'therapeutic'
         config.isPrivate = true
         config.tone = 'Reflective'
         config.genre = 'Personal'
     } else {
         config.isPrivate = false
-        // Reset defaults if needed
-        if (config.aiRole === 'therapist') config.aiRole = 'writer'
+        config.aiRole = 'coauthor' // Default to Kai
     }
 }
 
 const createStory = async () => {
+    if (!config.title) config.title = config.mode === 'journal' ? 'My Journal' : 'Untitled Story'
+    
     try {
         const response = await fetch('http://localhost:3001/api/stories', {
             method: 'POST',
@@ -250,14 +229,10 @@ const createStory = async () => {
         if (!response.ok) throw new Error('Failed to create story')
         
         const data = await response.json()
-        console.log("Story created:", data)
-        
-        // Redirect to Studio with the new Story ID
-        // Note: Studio needs to support :id param
         router.push(`/app/studio/${data.id}`)
     } catch (e) {
         console.error(e)
-        alert('Error creating story. Please check console.')
+        alert('Error creating story.')
     }
 }
 </script>

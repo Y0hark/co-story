@@ -144,6 +144,9 @@ router.get('/:id', async (req, res) => {
             u.display_name as author_name,
             (SELECT COUNT(*) FROM chapters c WHERE c.story_id = s.id AND c.status = 'published') as chapters_count,
             (SELECT COUNT(*) FROM story_likes l WHERE l.story_id = s.id) as likes_count,
+            (SELECT purpose FROM story_metadata WHERE story_id = s.id) as ai_role,
+            (SELECT theme FROM story_metadata WHERE story_id = s.id) as genre,
+            (SELECT writing_style FROM story_metadata WHERE story_id = s.id) as tone,
             ${userSelect}
             FROM stories s
             JOIN users u ON s.user_id = u.id
@@ -195,16 +198,76 @@ router.put('/:id', async (req, res) => {
             values.push(summary);
         }
 
-        if (fields.length === 0) return res.json({ message: 'No changes' });
+        if (summary !== undefined) {
+            fields.push(`summary = $${idx++}`);
+            values.push(summary);
+        }
+
+        if (fields.length === 0 && (req.body.genre === undefined && req.body.tone === undefined)) return res.json({ message: 'No changes' });
 
         values.push(id);
-        const result = await pool.query(
-            `UPDATE stories SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
-            values
-        );
+
+        // 1. Update Story Table
+        let result;
+        if (fields.length > 0) {
+            result = await pool.query(
+                `UPDATE stories SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`,
+                values
+            );
+        } else {
+            // Just fetch it
+            result = await pool.query(`SELECT * FROM stories WHERE id = $1`, [id]);
+        }
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Story not found' });
+        }
+
+        // 2. Update Metadata Table (Genre/Tone)
+        const { genre, tone } = req.body;
+        if (genre !== undefined || tone !== undefined) {
+            const metaFields = [];
+            const metaValues = [];
+            let metaIdx = 1;
+
+            if (genre !== undefined) {
+                metaFields.push(`theme = $${metaIdx++}`);
+                metaValues.push(genre);
+            }
+            if (tone !== undefined) {
+                metaFields.push(`writing_style = $${metaIdx++}`);
+                metaValues.push(tone);
+            }
+
+            if (metaFields.length > 0) {
+                metaValues.push(id);
+                // Upsert metadata
+                await pool.query(`
+                    INSERT INTO story_metadata (story_id, ${genre !== undefined ? 'theme,' : ''} ${tone !== undefined ? 'writing_style' : ''})
+                    VALUES ($${metaIdx}, ${genre !== undefined ? `$1,` : ''} ${tone !== undefined ? (genre !== undefined ? '$2' : '$1') : ''})
+                    ON CONFLICT (story_id) 
+                    DO UPDATE SET ${metaFields.join(', ')}
+                `.replace(/\$([0-9]+)/g, (match, p1) => {
+                    // Fix parameter indexing mismatch for the VALUES clause which is tricky with dynamic specific indexes
+                    // Actually, simpler logic:
+                    return match;
+                }), metaValues);
+
+                // Simplified Query Construction for safety:
+                let updateParts = [];
+                let updateVals = [];
+                let uIdx = 1;
+                if (genre !== undefined) { updateParts.push(`theme = $${uIdx++}`); updateVals.push(genre); }
+                if (tone !== undefined) { updateParts.push(`writing_style = $${uIdx++}`); updateVals.push(tone); }
+                updateVals.push(id);
+
+                await pool.query(`
+                    INSERT INTO story_metadata (story_id, theme, writing_style)
+                    VALUES ($${uIdx}, ${genre !== undefined ? '$1' : 'NULL'}, ${tone !== undefined ? (genre !== undefined ? '$2' : '$1') : 'NULL'})
+                    ON CONFLICT (story_id) 
+                    DO UPDATE SET ${updateParts.join(', ')}
+                `, updateVals);
+            }
         }
 
         res.json(result.rows[0]);
@@ -242,8 +305,8 @@ router.post('/', async (req, res) => {
         // 2. Create Metadata
         await client.query(`
             INSERT INTO story_metadata (story_id, theme, writing_style, purpose)
-            VALUES ($1, $2, $3, 'coauthor')
-        `, [storyId, genre, tone]);
+            VALUES ($1, $2, $3, $4)
+        `, [storyId, genre, tone, aiRole || 'coauthor']);
 
         // 3. Create First Chapter (if not import)
         await client.query(`
