@@ -18,13 +18,7 @@ const router = express.Router();
 
 import { pool } from '../db/pool';
 
-// Hardcoded User ID for testing (as agreed)
-const TEST_USER_ID = '00000000-0000-0000-0000-000000000000'; // We might need to ensure this user exists or use a seed.
-// Actually, let's just use a real UUID or insert one if missing.
-// For now, I'll use a random UUID and rely on the fact that I might need to create the user first 
-// or disable FK constraints? No, FK constraints exist.
-// Smartest move: Create a seed user in `init-db` or just find one? 
-// Let's just create a user on the fly if needed or use a fixed one.
+import { authenticateToken, AuthRequest } from '../middleware/auth';
 
 // GET /api/stories (Public / Community)
 router.get('/', async (req, res) => {
@@ -60,10 +54,9 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/stories/my (Dashboard)
-router.get('/my', async (req, res) => {
+router.get('/my', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        // In real app: req.user.id
-        const userId = '11111111-1111-1111-1111-111111111111'; // Fixed Test User
+        const userId = req.user.id;
 
         const result = await pool.query(`
             SELECT s.*, 
@@ -82,9 +75,9 @@ router.get('/my', async (req, res) => {
 });
 
 // GET /api/stories/liked (Profile)
-router.get('/liked', async (req, res) => {
+router.get('/liked', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const userId = '11111111-1111-1111-1111-111111111111'; // Fixed Test User
+        const userId = req.user.id;
 
         const result = await pool.query(`
             SELECT s.*, u.display_name as author_name, sm.theme as genre,
@@ -198,10 +191,7 @@ router.put('/:id', async (req, res) => {
             values.push(summary);
         }
 
-        if (summary !== undefined) {
-            fields.push(`summary = $${idx++}`);
-            values.push(summary);
-        }
+
 
         if (fields.length === 0 && (req.body.genre === undefined && req.body.tone === undefined)) return res.json({ message: 'No changes' });
 
@@ -278,20 +268,13 @@ router.put('/:id', async (req, res) => {
 });
 
 // POST /api/stories (Create New)
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
         const { title, mode, genre, tone, topic, aiRole, isPrivate } = req.body;
-        const userId = '11111111-1111-1111-1111-111111111111'; // Fixed Test User
-
-        // 0. Ensure User Exists (Hack for dev)
-        await client.query(`
-            INSERT INTO users (id, email, password_hash, display_name)
-            VALUES ($1, 'test@example.com', 'hash', 'Test User')
-            ON CONFLICT (id) DO NOTHING
-        `, [userId]);
+        const userId = req.user.id;
 
         // 1. Create Story
         const storyResult = await client.query(`

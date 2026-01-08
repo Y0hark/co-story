@@ -1,17 +1,17 @@
 <template>
-  <div class="min-h-screen bg-[#FDFBF7] text-stone-900 font-sans selection:bg-teal-100/50">
+  <div class="min-h-screen bg-[#FDFBF7] text-stone-900 font-sans selection:bg-indigo-100/50">
     <Navbar_Floating />
     
       <main class="min-h-screen pb-24 md:pb-0">
         <header class="hidden md:flex h-20 items-center justify-between px-10 bg-gradient-to-b from-[#FDFBF7] to-[#FDFBF7]/90 backdrop-blur-sm sticky top-0 z-10 transition-all duration-300">
             <div class="flex items-center gap-6">
                 <div class="flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity cursor-default group">
-                    <div class="p-2 rounded-xl bg-gradient-to-br from-teal-50 to-teal-100/50 border border-teal-100/50 shadow-sm group-hover:scale-105 transition-transform duration-300">
-                        <Feather class="w-5 h-5 text-teal-700" stroke-width="2.5" />
+                    <div class="p-2 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100/50 border border-indigo-100/50 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                        <Feather class="w-5 h-5 text-indigo-700" stroke-width="2.5" />
                     </div>
                     <div>
                         <h1 class="text-xl font-bold text-stone-900 tracking-tight leading-none font-serif">CoStory</h1>
-                        <span class="text-[10px] font-medium text-teal-600/80 tracking-widest uppercase ml-0.5">Studio</span>
+                        <span class="text-[10px] font-medium text-indigo-600/80 tracking-widest uppercase ml-0.5">Studio</span>
                     </div>
                 </div>
                 
@@ -25,7 +25,7 @@
 
              <button 
                 @click="createStory"
-                class="flex items-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md transform active:scale-95"
+                class="flex items-center gap-2 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-lg text-sm font-medium transition-all shadow-sm hover:shadow-md transform active:scale-95 hover-sketch"
             >
                 <Feather class="w-4 h-4" />
                 <span>New Story</span>
@@ -35,7 +35,7 @@
         <!-- Mobile Header -->
         <header class="md:hidden flex items-center justify-between px-4 py-4 bg-[#FDFBF7]/90 backdrop-blur-sm sticky top-0 z-10">
              <div class="flex items-center gap-2">
-                 <Feather class="w-5 h-5 text-teal-700" stroke-width="2.5" />
+                 <Feather class="w-5 h-5 text-indigo-700" stroke-width="2.5" />
                  <h1 class="text-lg font-bold text-stone-900 font-serif">CoStory</h1>
              </div>
         </header>

@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto space-y-8">
+  <div class="max-w-6xl mx-auto space-y-8 bg-stone-50 min-h-screen">
     <div class="flex flex-col items-center text-center space-y-6 py-6 md:py-10">
       <div class="space-y-2">
         <h1 class="text-3xl md:text-4xl font-serif font-bold text-stone-900">Discover Stories</h1>
@@ -8,24 +8,24 @@
       
       <div class="w-full max-w-lg mx-auto relative group">
           <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <Search class="w-4 h-4 text-stone-400 group-focus-within:text-teal-500 transition-colors" />
+              <Search class="w-4 h-4 text-stone-400 group-focus-within:text-indigo-500 transition-colors" />
           </div>
           <input 
             type="text" 
             v-model="searchQuery"
             placeholder="Search stories by title or description..." 
-            class="w-full bg-white border border-stone-200 rounded-full pl-10 pr-4 py-3 text-sm focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none text-stone-900 placeholder:text-stone-400 shadow-sm transition-all hover:border-stone-300"
+            class="w-full bg-white border border-stone-200 rounded-full pl-10 pr-4 py-3 text-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none text-stone-900 placeholder:text-stone-400 shadow-sm transition-all hover:border-stone-300"
            />
       </div>
     </div>
 
     <!-- Categories / Tabs -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide">
+    <div class="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide px-4 md:px-0">
         <button 
             v-for="cat in categories" 
             :key="cat"
             class="px-4 py-2 rounded-full border text-sm whitespace-nowrap transition-all shadow-sm"
-            :class="selectedCategory === cat ? 'bg-teal-50 text-teal-700 border-teal-200 font-medium' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'"
+            :class="selectedCategory === cat ? 'bg-indigo-50 text-indigo-700 border-indigo-200 font-medium' : 'bg-white border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700'"
             @click="selectedCategory = cat"
         >
             {{ cat }}
@@ -33,11 +33,11 @@
     </div>
 
     <!-- Featured Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-0 pb-12">
         <div 
             v-for="story in filteredStories" 
             :key="story.id"
-            class="group bg-white border border-stone-200 rounded-xl overflow-hidden hover:border-teal-500/30 hover:shadow-md transition-all cursor-pointer flex flex-col h-full"
+            class="group bg-white border border-stone-200 rounded-xl overflow-hidden hover:border-indigo-500/30 hover:shadow-md transition-all cursor-pointer flex flex-col h-full"
             @click="$router.push(`/app/read/${story.id}`)"
         >
             <!-- Cover Placeholder -->
@@ -70,7 +70,7 @@
                     </span>
                 </div>
 
-                <h3 class="text-lg font-serif font-bold text-stone-900 mb-2 group-hover:text-teal-700 transition-colors">{{ story.title }}</h3>
+                <h3 class="text-lg font-serif font-bold text-stone-900 mb-2 group-hover:text-indigo-700 transition-colors">{{ story.title }}</h3>
                 <p class="text-sm text-stone-500 line-clamp-3 mb-4 flex-1">
                     {{ story.description || "No description provided." }}
                 </p>
@@ -81,8 +81,8 @@
                     </div>
                     
                     <button 
-                        @click.stop="(e) => toggleLike(story)"
-                        class="flex items-center gap-1 transition-colors z-30 relative"
+                        @click.stop="() => toggleLike(story)"
+                        class="flex items-center gap-1 transition-colors z-30 relative group/like"
                         :class="story.is_liked ? 'text-rose-500' : 'text-stone-400 hover:text-rose-500'"
                     >
                         <Heart class="w-3 h-3" :fill="story.is_liked ? 'currentColor' : 'none'" /> 
@@ -91,7 +91,7 @@
                     
                     <button 
                         @click.stop="openLibraryModal(story)"
-                        class="p-1 text-stone-400 hover:text-teal-600 transition-colors"
+                        class="p-1 text-stone-400 hover:text-indigo-600 transition-colors hover-sketch bg-stone-50 rounded-full"
                         title="Add to Library"
                     >
                         <Bookmark class="w-3 h-3" />

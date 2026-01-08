@@ -3,19 +3,30 @@ import { ref } from 'vue'
 import axios from 'axios'
 
 export const useAuthStore = defineStore('auth', () => {
-    const user = ref(null)
+    const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
     const token = ref(localStorage.getItem('token'))
     const isAuthenticated = ref(!!token.value)
+
+    // Initialize Axios Header if token exists
+    if (token.value) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+    }
+
+    // Axios Interceptor for 401s
+    axios.interceptors.response.use(
+        (response) => response,
+        (error) => {
+            if (error.response?.status === 401) {
+                logout()
+            }
+            return Promise.reject(error)
+        }
+    )
 
     const login = async (credentials: any) => {
         try {
             const response = await axios.post('http://localhost:3001/api/auth/login', credentials)
-            token.value = response.data.token
-            user.value = response.data.user
-            isAuthenticated.value = true
-            localStorage.setItem('token', response.data.token)
-            // Set default auth header for future requests
-            axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+            setSession(response.data)
         } catch (error) {
             console.error('Login failed:', error)
             throw error
@@ -25,16 +36,21 @@ export const useAuthStore = defineStore('auth', () => {
     const register = async (userData: any) => {
         try {
             const response = await axios.post('http://localhost:3001/api/auth/register', userData)
-            // Automatically log in after register if the API returns a token
             if (response.data.token) {
-                token.value = response.data.token
-                user.value = response.data.user
-                isAuthenticated.value = true
-                localStorage.setItem('token', response.data.token)
-                axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`
+                setSession(response.data)
             }
         } catch (error) {
             console.error('Registration failed:', error)
+            throw error
+        }
+    }
+
+    const googleLogin = async (credential: string) => {
+        try {
+            const response = await axios.post('http://localhost:3001/api/auth/google', { credential })
+            setSession(response.data)
+        } catch (error) {
+            console.error('Google login failed:', error)
             throw error
         }
     }
@@ -44,7 +60,24 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = null
         isAuthenticated.value = false
         localStorage.removeItem('token')
+        localStorage.removeItem('user')
         delete axios.defaults.headers.common['Authorization']
+        // Optional: Redirect to login if using router here
+        // router.push('/login') 
+        // But store usually shouldn't depend on router directly unless injected. 
+        // Window location reload is a brutal but effective way to clear state if needed
+        if (window.location.pathname.startsWith('/app')) {
+            window.location.href = '/'
+        }
+    }
+
+    const setSession = (data: any) => {
+        token.value = data.token
+        user.value = data.user
+        isAuthenticated.value = true
+        localStorage.setItem('token', data.token)
+        localStorage.setItem('user', JSON.stringify(data.user))
+        axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`
     }
 
     return {
@@ -53,6 +86,7 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated,
         login,
         register,
+        googleLogin,
         logout
     }
 })

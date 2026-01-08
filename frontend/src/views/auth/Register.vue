@@ -1,60 +1,77 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-charcoal-900 px-4">
-    <div class="w-full max-w-md bg-charcoal-800 border border-charcoal-700 rounded-2xl shadow-xl p-8 animate-fade-in-up">
-      <div class="text-center mb-8">
-        <h1 class="text-3xl font-serif font-bold text-teal-400 mb-2">Start Writing</h1>
-        <p class="text-zinc-400">Join CoStory today.</p>
+  <div class="min-h-screen flex items-center justify-center bg-stone-50 px-4">
+    <div class="w-full max-w-md bg-white border border-stone-200 rounded-2xl shadow-xl p-8 animate-fade-in-up md:p-10 relative overflow-hidden">
+       <!-- Decorative background hint -->
+      <div class="absolute top-0 left-0 p-16 bg-indigo-50/50 rounded-full blur-3xl -translate-y-10 -translate-x-10 pointer-events-none"></div>
+
+      <div class="text-center mb-8 relative z-10">
+        <h1 class="text-3xl font-serif font-bold text-stone-900 mb-2">Start Writing</h1>
+        <p class="text-stone-500 font-medium">Join CoStory today.</p>
       </div>
 
-      <form @submit.prevent="handleRegister" class="space-y-6">
-        <div v-if="error" class="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-200 text-sm">
+      <form @submit.prevent="handleRegister" class="space-y-6 relative z-10">
+        <div v-if="error" class="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-sm flex items-center gap-2">
+           <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
           {{ error }}
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-zinc-300 mb-2">Full Name</label>
+          <label class="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2 ml-1">Full Name</label>
           <input 
             v-model="name" 
             type="text" 
-            class="w-full bg-charcoal-900 border border-charcoal-600 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-colors"
+            class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all hover:border-stone-300"
             placeholder="Jane Doe"
             required
           >
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-zinc-300 mb-2">Email</label>
+          <label class="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2 ml-1">Email</label>
           <input 
             v-model="email" 
             type="email" 
-            class="w-full bg-charcoal-900 border border-charcoal-600 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-colors"
+            class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all hover:border-stone-300"
             placeholder="you@example.com"
             required
           >
         </div>
 
         <div>
-           <label class="block text-sm font-medium text-zinc-300 mb-2">Password</label>
+           <label class="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-2 ml-1">Password</label>
            <input 
              v-model="password" 
              type="password" 
-             class="w-full bg-charcoal-900 border border-charcoal-600 rounded-lg px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 transition-colors"
+             class="w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all hover:border-stone-300"
              required
            >
         </div>
 
         <button 
           type="submit" 
-          class="w-full bg-teal-500 hover:bg-teal-400 text-charcoal-900 font-bold py-3 rounded-xl transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg shadow-teal-500/20"
+          class="w-full bg-stone-900 hover:bg-stone-800 text-stone-50 font-bold py-3.5 rounded-xl transition-all duration-300 transform active:scale-95 shadow-lg shadow-stone-900/10 hover-sketch flex items-center justify-center gap-2"
           :disabled="loading"
         >
+          <span v-if="loading" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
           {{ loading ? 'Creating Account...' : 'Create Account' }}
         </button>
       </form>
 
-      <p class="mt-8 text-center text-zinc-500 text-sm">
+      <!-- Divider -->
+      <div class="flex items-center gap-4 my-6 relative z-10">
+        <div class="h-px bg-stone-200 flex-1"></div>
+        <span class="text-xs font-bold text-stone-400 uppercase tracking-widest">Or</span>
+        <div class="h-px bg-stone-200 flex-1"></div>
+      </div>
+
+      <!-- Google Login Button -->
+      <div class="flex justify-center relative z-10">
+        <GoogleLogin :callback="handleGoogleLogin" />
+      </div>
+
+      <p class="mt-8 text-center text-stone-500 text-sm relative z-10">
         Already have an account? 
-        <router-link to="/auth/login" class="text-teal-400 hover:text-teal-300 font-medium">Log in</router-link>
+        <router-link to="/auth/login" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline decoration-2 underline-offset-2">Log in</router-link>
       </p>
     </div>
   </div>
@@ -85,10 +102,23 @@ const handleRegister = async () => {
         // Auto-login logic is handled in store or we assume token is set. 
         // If register only created account, we might need to login, but usually modern flows auto-login.
         // The AuthController.register returns a token, so we are logged in.
-        router.push('/app');
+        router.push('/app/dashboard');
     } catch (err: any) {
         console.error(err);
         error.value = err.response?.data?.error || 'An error occurred during registration';
+    } finally {
+        loading.value = false;
+    }
+}
+
+const handleGoogleLogin = async (response: any) => {
+    loading.value = true;
+    try {
+        await authStore.googleLogin(response.credential);
+        router.push('/app/dashboard');
+    } catch (err: any) {
+        console.error(err);
+        error.value = 'Google sign-up failed';
     } finally {
         loading.value = false;
     }

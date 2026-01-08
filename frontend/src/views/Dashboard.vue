@@ -9,7 +9,7 @@
             </div>
             <p class="text-stone-500 text-sm">Unlock more chapters and advanced AI models.</p>
         </div>
-        <button @click="$router.push('/app/subscription')" class="px-5 py-2.5 bg-stone-900 hover:bg-teal-600 text-white rounded-lg text-sm font-bold shadow-sm transition-all transform hover:-translate-y-0.5 whitespace-nowrap">
+        <button @click="$router.push('/app/subscription')" class="px-5 py-2.5 bg-stone-900 hover:bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-sm transition-all transform hover:-translate-y-0.5 whitespace-nowrap hover-sketch">
             Upgrade Plan
         </button>
     </div>
@@ -18,10 +18,10 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       
       <!-- Start Writing (CTA) -->
-      <div class="bg-white border border-stone-200 rounded-xl p-6 hover:border-teal-500/30 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between" @click="$router.push('/app/new-story')">
+      <div class="bg-white border border-stone-200 rounded-xl p-6 hover:border-indigo-500/30 hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between" @click="$router.push('/app/new-story')">
         <div>
-            <div class="h-10 w-10 rounded-lg bg-teal-50 flex items-center justify-center mb-4 group-hover:bg-teal-100 transition-colors">
-            <PenTool class="w-5 h-5 text-teal-700" />
+            <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-4 group-hover:bg-indigo-100 transition-colors">
+            <PenTool class="w-5 h-5 text-indigo-700" />
             </div>
             <h3 class="text-lg font-bold font-serif text-stone-900">Start Writing</h3>
             <p class="text-stone-500 text-sm mt-2">Create a new story or continue where you left off.</p>
@@ -35,8 +35,8 @@
                 <h3 class="text-lg font-bold font-serif text-stone-900">Monthly Usage</h3>
                 <p class="text-stone-500 text-xs">Resets in {{ stats?.subscription?.daysUntilReset || 30 }} days</p>
             </div>
-            <div class="h-10 w-10 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Activity class="w-5 h-5 text-amber-700" />
+            <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <Activity class="w-5 h-5 text-indigo-700" />
             </div>
         </div>
 
@@ -50,7 +50,7 @@
             <div class="w-full bg-stone-100 rounded-full h-2">
                 <div 
                     class="h-2 rounded-full transition-all duration-1000 ease-out"
-                    :class="(stats?.subscription?.usagePercentage || 0) > 90 ? 'bg-rose-500' : 'bg-teal-600'"
+                    :class="(stats?.subscription?.usagePercentage || 0) > 90 ? 'bg-rose-500' : 'bg-indigo-600'"
                     :style="{ width: `${stats?.subscription?.usagePercentage || 0}%` }"
                 ></div>
             </div>
@@ -66,8 +66,8 @@
 
       <!-- Total Stats -->
        <div class="bg-white border border-stone-200 rounded-xl p-6">
-        <div class="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-4">
-          <BookOpen class="w-5 h-5 text-indigo-700" />
+        <div class="h-10 w-10 rounded-lg bg-stone-50 flex items-center justify-center mb-4">
+          <BookOpen class="w-5 h-5 text-stone-700" />
         </div>
         <h3 class="text-lg font-bold font-serif text-stone-900">Total Archive</h3>
         <p class="text-stone-500 text-sm mt-2 flex flex-col gap-1">
@@ -83,20 +83,20 @@
             <button 
                 @click="activeTab = 'stories'"
                 class="pb-3 font-medium text-sm transition-colors relative flex items-center gap-2"
-                :class="activeTab === 'stories' ? 'text-teal-700' : 'text-stone-500 hover:text-stone-800'"
+                :class="activeTab === 'stories' ? 'text-indigo-700' : 'text-stone-500 hover:text-stone-800'"
             >
-                <Globe class="w-4 h-4" />
+                <Globe class="w-4 h-4 intro-y" />
                 Published
-                <div v-if="activeTab === 'stories'" class="absolute bottom-0 left-0 w-full h-0.5 bg-teal-700 rounded-full"></div>
+                <div v-if="activeTab === 'stories'" class="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-700 rounded-full"></div>
             </button>
             <button 
                 @click="activeTab = 'drafts'"
                 class="pb-3 font-medium text-sm transition-colors relative flex items-center gap-2"
-                :class="activeTab === 'drafts' ? 'text-teal-700' : 'text-stone-500 hover:text-stone-800'"
+                :class="activeTab === 'drafts' ? 'text-indigo-700' : 'text-stone-500 hover:text-stone-800'"
             >
                 <FileText class="w-4 h-4" />
                 Drafts
-                <div v-if="activeTab === 'drafts'" class="absolute bottom-0 left-0 w-full h-0.5 bg-teal-700 rounded-full"></div>
+                <div v-if="activeTab === 'drafts'" class="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-700 rounded-full"></div>
             </button>
              <button 
                 @click="activeTab = 'private'"
@@ -123,19 +123,19 @@
              <div 
                 v-for="story in filteredStories" 
                 :key="story.id"
-                class="bg-white border border-stone-200 p-6 rounded-xl hover:border-teal-500/30 hover:shadow-md transition-all group cursor-pointer flex justify-between items-center"
+                class="bg-white border border-stone-200 p-6 rounded-xl hover:border-indigo-500/30 hover:shadow-md transition-all group cursor-pointer flex justify-between items-center"
                 @click="router.push(`/app/studio/${story.id}`)"
             >
                 <div>
                      <div class="flex items-center gap-2 mb-1">
-                        <h3 class="text-lg font-serif font-bold text-stone-900 group-hover:text-teal-700 transition-colors">{{ story.title }}</h3>
+                        <h3 class="text-lg font-serif font-bold text-stone-900 group-hover:text-indigo-700 transition-colors">{{ story.title }}</h3>
                         <span v-if="story.mode === 'journaling'" class="text-[10px] uppercase font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Journal</span>
                     </div>
                     <p class="text-stone-500 text-sm mb-2 line-clamp-1 max-w-xl">
                         {{ story.description || story.topic || "No description." }}
                     </p>
                     <div class="flex items-center gap-4 text-xs text-stone-400">
-                         <span v-if="activeTab === 'stories'" class="flex items-center gap-1 font-medium text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
+                         <span v-if="activeTab === 'stories'" class="flex items-center gap-1 font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
                             {{ story.published_chapters_count }} Published
                          </span>
                          <span v-else-if="activeTab === 'drafts'" class="flex items-center gap-1 font-medium text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full border border-stone-200">
@@ -148,7 +148,7 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                     <button class="px-4 py-2 text-sm font-medium text-stone-600 bg-stone-50 hover:bg-teal-50 hover:text-teal-700 rounded-lg transition-colors">
+                     <button class="px-4 py-2 text-sm font-medium text-stone-600 bg-stone-50 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg transition-colors hover-sketch">
                         Edit
                      </button>
                 </div>
@@ -161,7 +161,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { PenTool, Activity, BookOpen, Heart, MessageCircle, Lock, FileText, Globe, ArrowRight } from 'lucide-vue-next'
+import { PenTool, Activity, BookOpen, Lock, FileText, Globe, ArrowRight } from 'lucide-vue-next'
 
 import { useAuthStore } from '../stores/auth'
 

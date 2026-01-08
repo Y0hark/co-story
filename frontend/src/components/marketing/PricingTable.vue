@@ -50,14 +50,18 @@
 
       <!-- CTA -->
       <button 
-        class="w-full py-3 px-4 rounded-xl font-medium transition-all duration-300 shadow-sm border hover-sketch"
+        @click="handleSelectTier(tier)"
+        class="w-full py-3 px-4 rounded-xl font-medium transition-all duration-300 shadow-sm border hover-sketch flex items-center justify-center gap-2"
         :class="[
             tier.highlight
                 ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700 shadow-indigo-200'
-                : 'bg-white text-stone-900 border-stone-200 hover:bg-stone-50 hover:text-stone-900 hover:border-stone-300'
+                : 'bg-white text-stone-900 border-stone-200 hover:bg-stone-50 hover:text-stone-900 hover:border-stone-300',
+            loadingTier === tier.name ? 'opacity-80 pointer-events-none' : ''
         ]"
+        :disabled="loadingTier !== null"
       >
-        {{ tier.cta }}
+        <span v-if="loadingTier === tier.name" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+        {{ loadingTier === tier.name ? 'Chargement...' : tier.cta }}
       </button>
 
     </div>
@@ -66,10 +70,20 @@
 
 <script setup lang="ts">
 import { Feather, Scroll, BookOpen, Crown, Check } from 'lucide-vue-next'
+import { useAuthStore } from '../../stores/auth';
+import { useRouter } from 'vue-router';
+import { ref } from 'vue';
+import axios from 'axios';
+
+const authStore = useAuthStore();
+const router = useRouter();
+const loadingTier = ref<string | null>(null);
 
 const tiers = [
   {
     name: "Novice", 
+    id: "novice",
+    priceId: null, // Free
     subtitle: "Page Blanche",
     price: "Gratuit",
     description: "L'étincelle initiale. Idéal pour découvrir la co-création sans risque.",
@@ -85,6 +99,8 @@ const tiers = [
   },
   {
     name: "Scribe",
+    id: "scribe",
+    priceId: "price_1SnKNH7uiRaz63ESwhD0EgQO", 
     subtitle: "La Plume Régulière",
     price: "6.99€",
     period: "<small class='text-stone-500'>/mois</small>",
@@ -100,6 +116,8 @@ const tiers = [
   },
   {
     name: "Storyteller",
+    id: "storyteller",
+    priceId: "price_1SnKNn7uiRaz63ESPeIERk7t",
     subtitle: "Le Maître Conteur",
     price: "9.99€",
     period: "<small class='text-stone-500'>/mois</small>",
@@ -118,6 +136,8 @@ const tiers = [
   },
   {
     name: "Architect",
+    id: "architect",
+    priceId: "price_1SnKOB7uiRaz63ESrUpiLHyh",
     subtitle: "Le Bâtisseur de Mondes",
     price: "19.99€",
     period: "<small class='text-stone-500'>/mois</small>",
@@ -135,4 +155,34 @@ const tiers = [
     iconComponent: Crown 
   }
 ]
+
+const handleSelectTier = async (tier: any) => {
+    if (!authStore.isAuthenticated) {
+        router.push('/auth/register');
+        return;
+    }
+
+    if (!tier.priceId) {
+        // Free tier
+        router.push('/app/dashboard');
+        return;
+    }
+
+    loadingTier.value = tier.name;
+    try {
+        const response = await axios.post('http://localhost:3001/api/payments/create-checkout-session', 
+            { priceId: tier.priceId },
+            { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+        
+        if (response.data.url) {
+            window.location.href = response.data.url;
+        }
+    } catch (error) {
+        console.error('Checkout failed:', error);
+        alert('Failed to start checkout'); // Simple alert for now
+    } finally {
+        loadingTier.value = null;
+    }
+}
 </script>

@@ -25,7 +25,7 @@
       <div class="absolute top-4 right-4 md:top-auto md:bottom-4 md:right-8">
           <button 
             @click="startEditing"
-            class="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-white/90 backdrop-blur-sm text-stone-600 border border-stone-200 hover:bg-stone-50 hover:text-stone-900 transition-all font-medium text-xs md:text-sm shadow-sm"
+            class="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-white/90 backdrop-blur-sm text-stone-600 border border-stone-200 hover:bg-stone-50 hover:text-stone-900 transition-all font-medium text-xs md:text-sm shadow-sm hover-sketch"
           >
               Edit Profile
           </button>
@@ -82,8 +82,8 @@
 
                     <div class="pt-4 mt-4 border-t border-stone-100">
                          <div class="flex items-center justify-between text-sm">
-                            <span class="text-teal-600 font-medium">Self Healing Time</span>
-                            <span class="text-teal-800 font-mono font-bold">{{ formatTime(stats.timeHealingMinutes) }}</span>
+                            <span class="text-indigo-600 font-medium">Self Healing Time</span>
+                            <span class="text-indigo-800 font-mono font-bold">{{ formatTime(stats.timeHealingMinutes) }}</span>
                         </div>
                         <p class="text-[10px] text-stone-400 mt-1">Time spent writing in private journals.</p>
                     </div>
@@ -94,7 +94,7 @@
         <!-- Right Column: Recent Activity / Stories -->
         <div class="lg:col-span-2 space-y-6">
             <div class="flex items-center gap-6 border-b border-stone-200 pb-1">
-                <h3 class="font-serif font-bold text-lg text-stone-900 pb-3 border-b-2 border-teal-700">Liked Stories</h3>
+                <h3 class="font-serif font-bold text-lg text-stone-900 pb-3 border-b-2 border-indigo-700">Liked Stories</h3>
             </div>
 
             <div class="space-y-4">
@@ -106,13 +106,13 @@
                 <div 
                     v-for="story in filteredStories" 
                     :key="story.id"
-                    class="bg-white border border-stone-200 p-6 rounded-xl hover:border-teal-500/30 hover:shadow-md transition-all group cursor-pointer"
+                    class="bg-white border border-stone-200 p-6 rounded-xl hover:border-indigo-500/30 hover:shadow-md transition-all group cursor-pointer"
                     @click="$router.push(`/app/studio/${story.id}`)"
                 >
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex flex-col">
                              <div class="flex items-center gap-2">
-                                <h3 class="text-xl font-serif font-bold text-stone-900 group-hover:text-teal-700 transition-colors">{{ story.title }}</h3>
+                                <h3 class="text-xl font-serif font-bold text-stone-900 group-hover:text-indigo-700 transition-colors">{{ story.title }}</h3>
                                 <span 
                                     v-if="story.status"
                                     class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border"
@@ -150,17 +150,17 @@
             
                 <div>
                     <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Display Name</label>
-                    <input v-model="editForm.display_name" type="text" class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-teal-500/20 text-stone-800 placeholder:text-stone-400 text-sm py-2.5 px-3 transition-all" />
+                    <input v-model="editForm.display_name" type="text" class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-indigo-500/20 text-stone-800 placeholder:text-stone-400 text-sm py-2.5 px-3 transition-all" />
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                          <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Avatar URL</label>
-                         <input v-model="editForm.avatar_url" type="text" class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-teal-500/20 text-stone-800 placeholder:text-stone-400 text-sm py-2.5 px-3 transition-all" />
+                         <input v-model="editForm.avatar_url" type="text" class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-indigo-500/20 text-stone-800 placeholder:text-stone-400 text-sm py-2.5 px-3 transition-all" />
                     </div>
                      <div>
                          <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Banner URL</label>
-                         <input v-model="editForm.banner_url" type="text" class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-teal-500/20 text-stone-800 placeholder:text-stone-400 text-sm py-2.5 px-3 transition-all" />
+                         <input v-model="editForm.banner_url" type="text" class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-indigo-500/20 text-stone-800 placeholder:text-stone-400 text-sm py-2.5 px-3 transition-all" />
                     </div>
                 </div>
 
@@ -169,7 +169,7 @@
                     <textarea 
                         v-model="editForm.bio" 
                         rows="4" 
-                        class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-teal-500/20 text-stone-800 placeholder:text-stone-400 text-sm p-3 leading-relaxed transition-all resize-none"
+                        class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-indigo-500/20 text-stone-800 placeholder:text-stone-400 text-sm p-3 leading-relaxed transition-all resize-none"
                         placeholder="Tell us about yourself..."
                     ></textarea>
                 </div>
@@ -183,7 +183,7 @@
                             @click="toggleTag(genre)"
                             class="px-3 py-1.5 rounded-full text-xs font-medium transition-all border"
                             :class="editForm.tags.includes(genre) 
-                                ? 'bg-teal-600 border-teal-600 text-white shadow-sm' 
+                                ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' 
                                 : 'bg-white border-stone-200 text-stone-500 hover:border-stone-400 hover:text-stone-700'"
                         >
                             {{ genre }}
@@ -193,8 +193,8 @@
                 </div>
 
             <div class="flex justify-end gap-3 pt-2">
-                <button @click="isEditing = false" class="px-4 py-2 text-stone-500 hover:bg-stone-100 rounded-lg text-sm transition-colors">Cancel</button>
-                <button @click="saveProfile" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors">Save Changes</button>
+                <button @click="isEditing = false" class="px-4 py-2 text-stone-500 hover:bg-stone-100 rounded-lg text-sm transition-colors hover-sketch">Cancel</button>
+                <button @click="saveProfile" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors hover-sketch">Save Changes</button>
             </div>
         </div>
     </div>

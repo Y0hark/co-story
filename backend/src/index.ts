@@ -17,6 +17,9 @@ import userRoutes from './routes/users';
 import readingListRoutes from './routes/reading_lists';
 import socialRoutes from './routes/social';
 
+import chatRoutes from './routes/chat';
+import paymentRoutes from './routes/payments';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -24,10 +27,11 @@ const PORT = process.env.PORT || 3001;
 // const pool = new Pool({...}) 
 
 app.use(cors());
-app.use(express.json());
 
-app.use('/api/auth', authRoutes);
-import chatRoutes from './routes/chat';
+// Mount payment routes BEFORE global JSON parsing so webhook can access raw body
+app.use('/api/payments', paymentRoutes);
+
+app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/stories', storyRoutes); // This mounts at /api/stories

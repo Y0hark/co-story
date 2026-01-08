@@ -1,8 +1,5 @@
 <template>
-  <div class="h-[calc(100dvh-10rem)] md:h-[calc(100vh-10rem)] flex flex-col md:flex-row relative">
-    
-    <!-- Mobile Tab Navigation (Top or Bottom? Let's go Top for Context, Bottom for nav) -->
-    <!-- Let's use Bottom Nav for switching views on Mobile -->
+  <div class="h-[calc(100dvh-10rem)] md:h-[calc(100vh-10rem)] flex flex-col md:flex-row relative bg-stone-50">
     
     <!-- DESKTOP LAYOUT (Hidden on Mobile) -->
     <div class="hidden md:flex w-full h-full" @mousemove="handleMouseMove" @mouseup="stopResize" @mouseleave="stopResize">
@@ -71,7 +68,7 @@
                             v-model="story.description"
                             rows="3"
                             placeholder="Story description..."
-                            class="w-full bg-white border border-stone-200 rounded-lg text-sm text-stone-700 placeholder:text-stone-400 p-3 resize-y focus:ring-1 focus:ring-teal-500 focus:border-teal-500 shadow-sm transition-all"
+                            class="w-full bg-white border border-stone-200 rounded-lg text-sm text-stone-700 placeholder:text-stone-400 p-3 resize-y focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm transition-all"
                             @blur="saveStory"
                         ></textarea>
                         <div class="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -84,7 +81,7 @@
                 <h2 class="font-bold font-serif text-stone-900 text-sm">Chapters</h2>
                 <button 
                     @click="createChapter"
-                    class="text-teal-600 hover:text-teal-700 hover:bg-teal-50 rounded p-1 transition-colors"
+                    class="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded p-1 transition-colors"
                 >
                     <Plus class="w-4 h-4" />
                 </button>
@@ -95,7 +92,7 @@
                     v-for="chapter in chapters" 
                     :key="chapter.id"
                     class="px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors border group relative"
-                    :class="selectedChapterId === chapter.id ? 'bg-stone-100 text-teal-700 border-stone-200 font-medium' : 'bg-white border-transparent text-stone-500 hover:text-stone-900 hover:bg-stone-50'"
+                    :class="selectedChapterId === chapter.id ? 'bg-stone-100 text-indigo-900 border-stone-200 font-medium' : 'bg-white border-transparent text-stone-500 hover:text-stone-900 hover:bg-stone-50'"
                     @click="selectedChapterId = chapter.id"
                 >
                     <div class="flex items-center justify-between w-full">
@@ -104,7 +101,7 @@
                             <span class="truncate">{{ chapter.title }}</span>
                         </div>
                         <div class="flex items-center gap-2 ml-2">
-                            <div v-if="chapter.status === 'published'" class="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" title="Published"></div>
+                            <div v-if="chapter.status === 'published'" class="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" title="Published"></div>
                             <button 
                                 @click.stop="confirmDeleteChapter(chapter)"
                                 class="opacity-0 group-hover:opacity-100 p-1 text-stone-300 hover:text-red-500 transition-all"
@@ -120,7 +117,7 @@
             <div class="p-4 border-t border-stone-200 bg-stone-50 shrink-0">
                 <button 
                     @click="createChapter"
-                    class="w-full py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                    class="w-full py-2 bg-stone-900 hover:bg-stone-800 text-stone-50 rounded-lg text-sm font-medium transition-colors shadow-sm hover-sketch"
                 >
                     + New Chapter
                 </button>
@@ -132,7 +129,7 @@
             class="h-2 w-full cursor-row-resize flex items-center justify-center hover:bg-stone-200 rounded transition-colors group"
             @mousedown.prevent="startResize('split')"
         >
-            <div class="w-8 h-1 rounded-full bg-stone-300 group-hover:bg-teal-400"></div>
+            <div class="w-8 h-1 rounded-full bg-stone-300 group-hover:bg-indigo-400"></div>
         </div>
 
         <!-- Bottom: World Database -->
@@ -150,7 +147,7 @@
             class="w-4 h-full cursor-col-resize flex items-center justify-center hover:bg-stone-100 transition-colors group z-10 mx-1"
             @mousedown.prevent="startResize('left')"
         >
-            <div class="h-8 w-1 rounded-full bg-stone-300 group-hover:bg-teal-400"></div>
+            <div class="h-8 w-1 rounded-full bg-stone-300 group-hover:bg-indigo-400"></div>
         </div>
 
         <!-- Main Editor Area -->
@@ -166,10 +163,10 @@
             <div v-if="selectedChapter && story?.mode !== 'journal'" class="flex items-center gap-2">
                 <button 
                     @click="togglePublishChapter"
-                    class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all border hover-sketch"
                     :class="selectedChapter.status === 'published' 
-                        ? 'bg-teal-50 text-teal-700 border-teal-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200' 
-                        : 'bg-stone-100 text-stone-500 border-stone-200 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200'"
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200' 
+                        : 'bg-stone-100 text-stone-500 border-stone-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200'"
                 >
                     {{ selectedChapter.status === 'published' ? 'Published' : 'Draft' }}
                 </button>
@@ -188,7 +185,7 @@
             class="w-4 h-full cursor-col-resize flex items-center justify-center hover:bg-stone-100 transition-colors group z-10 mx-1"
             @mousedown.prevent="startResize('right')"
         >
-            <div class="h-8 w-1 rounded-full bg-stone-300 group-hover:bg-teal-400"></div>
+            <div class="h-8 w-1 rounded-full bg-stone-300 group-hover:bg-indigo-400"></div>
         </div>
 
         <!-- Right Sidebar: AI Tools (Bigger) -->
@@ -223,9 +220,9 @@
                     <div v-if="selectedChapter">
                          <button 
                             @click="togglePublishChapter"
-                            class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border shrink-0"
+                            class="px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all border shrink-0 hover-sketch"
                             :class="selectedChapter.status === 'published' 
-                                ? 'bg-teal-50 text-teal-700 border-teal-200' 
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200' 
                                 : 'bg-stone-100 text-stone-500 border-stone-200'"
                         >
                             {{ selectedChapter.status === 'published' ? 'Pub' : 'Draft' }}
@@ -252,7 +249,7 @@
                     />
                     <button 
                         @click="router.push('/app/new-story')"
-                        class="mb-4 flex items-center gap-2 text-stone-500 hover:text-teal-600 transition-colors text-xs font-medium"
+                        class="mb-4 flex items-center gap-2 text-stone-500 hover:text-indigo-600 transition-colors text-xs font-medium"
                     >
                         <Feather class="w-3 h-3" />
                         <span>Tell a new Story</span>
@@ -281,17 +278,17 @@
                   <div class="space-y-2">
                       <div class="flex items-center justify-between">
                           <h3 class="font-bold text-stone-900">Chapters</h3>
-                           <button @click="createChapter" class="flex items-center gap-1 text-teal-600 text-sm font-medium"><Plus class="w-4 h-4"/> New</button>
+                           <button @click="createChapter" class="flex items-center gap-1 text-indigo-600 text-sm font-medium hover-sketch"><Plus class="w-4 h-4"/> New</button>
                       </div>
                       <div 
                         v-for="chapter in chapters" 
                         :key="chapter.id"
                         class="p-3 rounded-lg border flex items-center justify-between"
-                        :class="selectedChapterId === chapter.id ? 'bg-teal-50 border-teal-200 text-teal-800' : 'bg-white border-stone-200 text-stone-600'"
+                        :class="selectedChapterId === chapter.id ? 'bg-indigo-50 border-indigo-200 text-indigo-800' : 'bg-white border-stone-200 text-stone-600'"
                         @click="handleMobileChapterSelect(chapter.id)"
                     >
                         <span>{{ chapter.index }}. {{ chapter.title || 'Untitled' }}</span>
-                         <span v-if="chapter.status === 'published'" class="w-2 h-2 rounded-full bg-teal-500"></span>
+                         <span v-if="chapter.status === 'published'" class="w-2 h-2 rounded-full bg-indigo-500"></span>
                     </div>
                   </div>
             </div>
@@ -310,19 +307,19 @@
 
         <!-- Bottom Tab Bar -->
         <div class="h-16 bg-white border-t border-stone-200 flex items-center justify-around shrink-0 pb-safe">
-            <button @click="activeTab = 'chapters'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'chapters' ? 'text-teal-600' : 'text-stone-400'">
+            <button @click="activeTab = 'chapters'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'chapters' ? 'text-indigo-600' : 'text-stone-400'">
                 <List class="w-5 h-5" />
                 <span class="text-[10px] font-medium">Story</span>
             </button>
-            <button @click="activeTab = 'editor'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'editor' ? 'text-teal-600' : 'text-stone-400'">
+            <button @click="activeTab = 'editor'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'editor' ? 'text-indigo-600' : 'text-stone-400'">
                 <PenTool class="w-5 h-5" />
                 <span class="text-[10px] font-medium">Editor</span>
             </button>
-            <button @click="activeTab = 'world'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'world' ? 'text-teal-600' : 'text-stone-400'">
+            <button @click="activeTab = 'world'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'world' ? 'text-indigo-600' : 'text-stone-400'">
                 <Globe class="w-5 h-5" />
                 <span class="text-[10px] font-medium">World</span>
             </button>
-            <button @click="activeTab = 'ai'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'ai' ? 'text-teal-600' : 'text-stone-400'">
+            <button @click="activeTab = 'ai'" class="flex flex-col items-center gap-1 p-2 transition-colors" :class="activeTab === 'ai' ? 'text-indigo-600' : 'text-stone-400'">
                 <Sparkles class="w-5 h-5" />
                 <span class="text-[10px] font-medium">AI</span>
             </button>
@@ -344,9 +341,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import MarkdownIt from 'markdown-it'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import { Plus, Sparkles, List, PenTool, Globe, Feather, ArrowLeft, Trash2 } from 'lucide-vue-next'
 import Editor from '../../components/editor/Editor.vue'
 import WorldPanel from '../../components/studio/WorldPanel.vue'
@@ -475,8 +473,11 @@ const aiContext = computed(() => {
         chapters: chapters.value.map(c => ({ title: c.title, index: c.index })),
         worldManifest: worldItems.value.map(w => ({ name: w.name, type: w.type })),
         
-        // Include Summaries for AI
+        // Include Summaries and Context for AI
         summaryStory: story.value?.summary || null,
+        description: story.value?.description || null,
+        genre: story.value?.genre || null,
+        tone: story.value?.tone || null,
         summaryPreviousChapter,
         summaryRecentContext,
         aiRole: story.value?.ai_role, // Pass persisted AI role
@@ -517,10 +518,8 @@ const currentChapterTitle = computed({
 const loadStory = async () => {
     if (!storyId.value) return
     try {
-         const res = await fetch(`http://localhost:3001/api/stories/${storyId.value}`)
-         if(res.ok) {
-             story.value = await res.json()
-         }
+        const response = await axios.get(`http://localhost:3001/api/stories/${storyId.value}`)
+        story.value = response.data
     } catch (e) {
         console.error("Failed to load story", e)
     }
@@ -528,15 +527,12 @@ const loadStory = async () => {
 
 const loadChapters = async () => {
     try {
-        const res = await fetch(`http://localhost:3001/api/chapters/story/${storyId.value}`)
-        if (!res.ok) throw new Error("Failed to fetch chapters")
-        
-        const data = await res.json()
-        if (Array.isArray(data)) {
-            chapters.value = data
+        const response = await axios.get(`http://localhost:3001/api/chapters/story/${storyId.value}`)
+        if (Array.isArray(response.data)) {
+            chapters.value = response.data
         } else {
             chapters.value = []
-            console.error("API did not return an array", data)
+            console.error("API did not return an array", response.data)
         }
         
         // Select first chapter if none selected
@@ -552,17 +548,13 @@ const loadChapters = async () => {
 const saveStory = async () => {
     if (!story.value) return
     try {
-        await fetch(`http://localhost:3001/api/stories/${storyId.value}`, {
-             method: 'PUT',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({
+        await axios.put(`http://localhost:3001/api/stories/${storyId.value}`, {
                  title: story.value.title,
                  status: story.value.status,
                  description: story.value.description,
                  summary: story.value.summary,
                  genre: story.value.genre, // Save Genre
                  tone: story.value.tone // Save Tone
-             })
         })
     } catch (e) {
         console.error("Failed to save story", e)
@@ -578,11 +570,7 @@ const togglePublishChapter = async () => {
     selectedChapter.value.status = newStatus
     
     try {
-        await fetch(`http://localhost:3001/api/chapters/${selectedChapter.value.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: newStatus })
-        })
+        await axios.put(`http://localhost:3001/api/chapters/${selectedChapter.value.id}`, { status: newStatus })
     } catch (e) {
         console.error("Failed to update status", e)
         // Revert on failure
@@ -593,14 +581,10 @@ const togglePublishChapter = async () => {
 const saveChapter = async () => {
     if (!selectedChapter.value) return
     try {
-        await fetch(`http://localhost:3001/api/chapters/${selectedChapter.value.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        await axios.put(`http://localhost:3001/api/chapters/${selectedChapter.value.id}`, {
                 title: selectedChapter.value.title,
                 content: selectedChapter.value.content,
                 summary: selectedChapter.value.summary // Save summary
-            })
         })
     } catch (e) {
         console.error("Failed to save", e)
@@ -613,21 +597,18 @@ const summarizeChapter = async () => {
     isSummarizing.value = true
     try {
          const token = localStorage.getItem('token')
-         const res = await fetch('http://localhost:3001/api/ai/summarize', {
-             method: 'POST',
+         const res = await axios.post('http://localhost:3001/api/ai/summarize', {
+             text: selectedChapter.value.content.replace(/<[^>]*>/g, ''), // Strip HTML
+             type: 'chapter' 
+         }, {
              headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
-             },
-             body: JSON.stringify({ 
-                 text: selectedChapter.value.content.replace(/<[^>]*>/g, ''), // Strip HTML
-                 type: 'chapter' 
-             })
+             }
          })
          
-         if (res.ok) {
-             const data = await res.json()
-             selectedChapter.value.summary = data.summary
+         if (res.status === 200) {
+             selectedChapter.value.summary = res.data.summary
              // Save immediately
              await saveChapter()
          }
@@ -649,22 +630,19 @@ const updateStorySummary = async () => {
 
     try {
          const token = localStorage.getItem('token')
-         const res = await fetch('http://localhost:3001/api/ai/summarize', {
-             method: 'POST',
+         const res = await axios.post('http://localhost:3001/api/ai/summarize', {
+             text: fullText,
+             type: 'story' 
+         }, {
              headers: { 
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}` 
-             },
-             body: JSON.stringify({ 
-                 text: fullText,
-                 type: 'story' 
-             })
+             }
          })
          
-         if (res.ok) {
-             const data = await res.json()
+         if (res.status === 200) {
              if (story.value) {
-                 story.value.summary = data.summary
+                 story.value.summary = res.data.summary
                  await saveStory()
              }
          }
@@ -682,14 +660,12 @@ const createChapter = async (initialData: any = {}) => {
     }
 
     try {
-        const res = await fetch('http://localhost:3001/api/chapters', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ storyId: storyId.value, ...initialData })
+        const response = await axios.post('http://localhost:3001/api/chapters', {
+            story_id: storyId.value,
+            title: 'New Chapter',
+            ...initialData
         })
-        if (!res.ok) throw new Error("Failed to create chapter")
-        
-        const newChapter = await res.json()
+        const newChapter = response.data
         chapters.value.push(newChapter)
         
         // If content provided, update it immediately (since API might only take title/storyId)
@@ -891,14 +867,12 @@ onMounted(async () => {
     if (!storyId.value) {
         // No ID provided, find most recent story or redirect to new
         try {
-            const res = await fetch('http://localhost:3001/api/stories/my')
-            if (res.ok) {
-                const stories = await res.json()
-                if (stories.length > 0) {
-                    // Redirect to most recent
-                    router.replace(`/app/studio/${stories[0].id}`)
-                    return
-                }
+            const response = await axios.get('http://localhost:3001/api/stories/my')
+            const stories = response.data
+            if (stories.length > 0) {
+                // Redirect to most recent
+                router.replace(`/app/studio/${stories[0].id}`)
+                return
             }
             // No stories, go to new story
             router.replace('/app/new-story')

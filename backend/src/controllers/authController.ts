@@ -1,9 +1,82 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { pool } from '../config/database';
+import { OAuth2Client } from 'google-auth-library';
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class AuthController {
+    // ... existing methods ...
+
+    static async googleLogin(req: Request, res: Response) {
+        try {
+            const { credential } = req.body;
+
+            // Verify Google Token
+            const ticket = await client.verifyIdToken({
+                idToken: credential,
+                audience: process.env.GOOGLE_CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+            });
+            const payload = ticket.getPayload();
+
+            if (!payload) {
+                return res.status(400).json({ error: 'Invalid Google Token' });
+            }
+
+            const { email, name, sub: googleId, picture } = payload;
+
+            if (!email) {
+                return res.status(400).json({ error: 'Email not provided by Google' });
+            }
+
+            // Check if user exists
+            const userCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+            let user;
+
+            if (userCheck.rows.length > 0) {
+                // User exists -> Login
+                user = userCheck.rows[0];
+
+                // Link Google ID if not linked
+                if (!user.google_id) {
+                    await pool.query('UPDATE users SET google_id = $1, avatar_url = COALESCE(avatar_url, $2) WHERE id = $3', [googleId, picture, user.id]);
+                }
+            } else {
+                // User does not exist -> Register
+                const newUser = await pool.query(
+                    'INSERT INTO users (email, display_name, google_id, avatar_url, password_hash) VALUES ($1, $2, $3, $4, NULL) RETURNING *',
+                    [email, name || 'User', googleId, picture]
+                );
+                user = newUser.rows[0];
+
+                // Create default "Saved" library for the user
+                await pool.query(
+                    "INSERT INTO reading_lists (user_id, name, is_public) VALUES ($1, 'Saved', false)",
+                    [user.id]
+                );
+            }
+
+            // Create JWT
+            const token = jwt.sign(
+                { id: user.id, email: user.email },
+                process.env.JWT_SECRET || 'secret',
+                { expiresIn: '7d' }
+            );
+
+            res.json({
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    display_name: user.display_name,
+                    avatar_url: user.avatar_url,
+                    subscription_tier: user.subscription_tier
+                }
+            });
+
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Google Login Failed' });
+        }
+    }
+    // ... existing methods ...
 
     static async register(req: Request, res: Response) {
         try {
@@ -35,7 +108,7 @@ export class AuthController {
             const token = jwt.sign(
                 { id: newUser.rows[0].id, email: newUser.rows[0].email },
                 process.env.JWT_SECRET || 'secret',
-                { expiresIn: '1d' }
+                { expiresIn: '7d' }
             );
 
             res.status(201).json({
@@ -71,7 +144,7 @@ export class AuthController {
             const token = jwt.sign(
                 { id: user.id, email: user.email },
                 process.env.JWT_SECRET || 'secret',
-                { expiresIn: '1d' }
+                { expiresIn: '7d' }
             );
 
             res.json({
