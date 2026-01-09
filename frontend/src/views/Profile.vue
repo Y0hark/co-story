@@ -17,7 +17,21 @@
         </div>
         
         <div class="mb-2 text-center md:text-left">
-            <h1 class="text-2xl md:text-3xl font-serif font-bold text-stone-900">{{ user.display_name || 'Anonymous Writer' }}</h1>
+            <div class="flex items-center gap-3 mb-1">
+                <h1 class="text-2xl md:text-3xl font-serif font-bold text-stone-900">{{ user.display_name || 'Anonymous Writer' }}</h1>
+                <span 
+                    v-if="stats?.subscription?.tier && stats.subscription.tier !== 'free'"
+                    class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold border shadow-sm"
+                    :class="{
+                        'bg-emerald-50 text-emerald-700 border-emerald-200': stats.subscription.tier === 'scribe',
+                        'bg-indigo-50 text-indigo-700 border-indigo-200': stats.subscription.tier === 'storyteller',
+                        'bg-purple-50 text-purple-700 border-purple-200': stats.subscription.tier === 'architect',
+                        'bg-stone-100 text-stone-600 border-stone-200': stats.subscription.tier === 'pro'
+                    }"
+                >
+                    {{ stats.subscription.tier }}
+                </span>
+            </div>
             <p class="text-stone-500 text-sm">Joined {{ formatDate(user.created_at) }}</p>
         </div>
       </div>
@@ -202,11 +216,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import { Heart, BookOpen } from 'lucide-vue-next'
 
-// Mock User ID for development (matches what we use in seeds/auth)
-const USER_ID = '11111111-1111-1111-1111-111111111111'
+const route = useRoute()
+const authStore = useAuthStore()
+
+const targetUserId = computed(() => {
+    return (route.params.id as string) || authStore.user?.id
+})
 
 const user = ref<any>(null)
 const stats = ref<any>(null)
@@ -248,19 +268,22 @@ const getStatusLabel = (status: string) => {
 }
 
 const fetchData = async () => {
+    const id = targetUserId.value
+    if (!id) return
+
     try {
         loading.value = true
         
         // Fetch User Profile
-        const userRes = await fetch(`http://localhost:3001/api/users/${USER_ID}`)
+        const userRes = await fetch(`http://localhost:3001/api/users/${id}`)
         if (userRes.ok) user.value = await userRes.json()
         
         // Fetch Stats
-        const statsRes = await fetch(`http://localhost:3001/api/users/${USER_ID}/stats`)
+        const statsRes = await fetch(`http://localhost:3001/api/users/${id}/stats`)
         if (statsRes.ok) stats.value = await statsRes.json()
         
         // Fetch Liked Stories
-        const likedRes = await fetch(`http://localhost:3001/api/stories/liked`) // Hardcoded user in backend
+        const likedRes = await fetch(`http://localhost:3001/api/stories/liked?userId=${id}`) 
         if (likedRes.ok) likedStories.value = await likedRes.json()
         
     } catch (e) {
@@ -269,6 +292,8 @@ const fetchData = async () => {
         loading.value = false
     }
 }
+
+watch(targetUserId, () => fetchData())
 
 const isEditing = ref(false)
 const editForm = ref({
@@ -308,8 +333,11 @@ const toggleTag = (tag: string) => {
     }
 }
 const saveProfile = async () => {
+    const id = targetUserId.value
+    if (!id) return
+
     try {
-        const res = await fetch(`http://localhost:3001/api/users/${USER_ID}`, {
+        const res = await fetch(`http://localhost:3001/api/users/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(editForm.value)

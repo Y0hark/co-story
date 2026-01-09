@@ -87,13 +87,29 @@ export const StripeService = {
                 if (['active', 'trialing'].includes(status)) dbStatus = 'active';
                 else if (['past_due', 'unpaid'].includes(status)) dbStatus = 'past_due';
 
-                // We might want to update tier based on Product ID if we have multiple tiers
-                // For now assuming PRO is the only paid tier
+                // Determine Tier based on Price ID
+                let tier = 'free';
+                if (dbStatus === 'active') {
+                    const items = subscription.items.data;
+                    if (items.length > 0) {
+                        const priceId = items[0].price.id;
 
-                await pool.query(
+                        if (priceId === 'price_1SnKNH7uiRaz63ESwhD0EgQO') tier = 'scribe';
+                        else if (priceId === 'price_1SnKNn7uiRaz63ESPeIERk7t') tier = 'storyteller';
+                        else if (priceId === 'price_1SnKOB7uiRaz63ESrUpiLHyh') tier = 'architect';
+                        else tier = 'pro';
+                    } else {
+                        tier = 'pro';
+                    }
+                }
+
+                console.log(`[Stripe Webhook] Processing ${event.type} for customer ${customerId}. Status: ${status} -> DB: ${dbStatus}, Tier: ${tier}`);
+
+                const updateRes = await pool.query(
                     'UPDATE users SET subscription_status = $1, subscription_tier = $2 WHERE stripe_customer_id = $3',
-                    [dbStatus, dbStatus === 'active' ? 'pro' : 'free', customerId]
+                    [dbStatus, tier, customerId]
                 );
+                console.log(`[Stripe Webhook] Update result: ${updateRes.rowCount} rows affected.`);
                 break;
         }
     }

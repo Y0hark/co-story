@@ -12,10 +12,11 @@
         </div>
        
         <nav class="flex gap-4">
-          <router-link to="/auth/login" class="px-5 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors duration-200">
+// Update CTA Buttons (Primary) to be dynamic
+          <router-link to="/auth/login" class="px-5 py-2 text-sm font-medium text-stone-600 hover:text-primary-900 transition-colors duration-200">
             Log in
           </router-link>
-          <router-link to="/auth/register" class="px-5 py-2 text-sm font-medium bg-stone-900 text-stone-50 rounded-lg hover:bg-stone-800 transition-all duration-300 shadow-lg shadow-stone-900/10 hover-sketch">
+          <router-link to="/auth/register" class="px-5 py-2 text-sm font-medium bg-primary-900 text-primary-50 rounded-lg hover:bg-primary-800 transition-all duration-300 shadow-lg shadow-primary-900/10 hover-sketch">
             Start Writing
           </router-link>
         </nav>
@@ -47,7 +48,7 @@
         </p>
 
         <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <router-link to="/app/dashboard" class="group px-8 py-4 bg-stone-900 text-stone-50 text-lg font-medium rounded-xl hover:bg-stone-800 transition-all duration-300 shadow-xl shadow-stone-900/10 transform hover:-translate-y-0.5 border border-stone-900 hover-sketch">
+          <router-link to="/app/dashboard" class="group px-8 py-4 bg-primary-900 text-primary-50 text-lg font-medium rounded-xl hover:bg-primary-800 transition-all duration-300 shadow-xl shadow-primary-900/10 transform hover:-translate-y-0.5 border border-primary-900 hover-sketch">
              <span class="flex items-center gap-2">
                Start Writing Free
                <ArrowRight class="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -65,25 +66,25 @@
     <section id="features" class="py-24 px-4 relative z-0">
       <div class="max-w-7xl mx-auto">
         <div class="grid md:grid-cols-3 gap-8">
-           <!-- Card: White bg, Stone-200 border, stylized icons (Ink style) -->
-           <div class="p-8 rounded-2xl bg-white border border-stone-200 shadow-sm hover:shadow-md transition-all duration-300 group">
-             <div class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 text-stone-800 border border-stone-200">
+           <!-- Card: White bg, Primary-200 border, stylized icons (Ink style) -->
+           <div class="p-8 rounded-2xl bg-white border border-primary-200 shadow-sm hover:shadow-md transition-all duration-300 group">
+             <div class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 text-primary-800 border border-primary-200">
                 <Sparkles class="w-6 h-6" stroke-width="1.5" />
              </div>
              <h3 class="text-xl font-bold mb-3 text-stone-900 font-serif">Deep Co-Creation</h3>
              <p class="text-stone-500 leading-relaxed">It doesn't just write. It asks clarifying questions, suggests plot twists, and respects your style.</p>
            </div>
            
-           <div class="p-8 rounded-2xl bg-white border border-stone-200 shadow-sm hover:shadow-md transition-all duration-300 group">
-             <div class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 text-stone-800 border border-stone-200">
+           <div class="p-8 rounded-2xl bg-white border border-primary-200 shadow-sm hover:shadow-md transition-all duration-300 group">
+             <div class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 text-primary-800 border border-primary-200">
                <Lock class="w-6 h-6" stroke-width="1.5" />
              </div>
              <h3 class="text-xl font-bold mb-3 text-stone-900 font-serif">Private & Secure</h3>
              <p class="text-stone-500 leading-relaxed">Your drafts are your own. End-to-end encrypted logic ensures your personal stories stay personal.</p>
            </div>
 
-           <div class="p-8 rounded-2xl bg-white border border-stone-200 shadow-sm hover:shadow-md transition-all duration-300 group">
-             <div class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 text-stone-800 border border-stone-200">
+           <div class="p-8 rounded-2xl bg-white border border-primary-200 shadow-sm hover:shadow-md transition-all duration-300 group">
+             <div class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 text-primary-800 border border-primary-200">
                <Heart class="w-6 h-6" stroke-width="1.5" />
              </div>
              <h3 class="text-xl font-bold mb-3 text-stone-900 font-serif">Therapeutic Flow</h3>

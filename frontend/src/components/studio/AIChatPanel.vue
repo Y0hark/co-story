@@ -205,14 +205,27 @@ const aiModes = computed(() => {
     // If Journal -> Only Sofia (therapeutic)
     // If Guided -> All Guided modes (Kai, Nora, Atlas)
     
-    let modes = ASSISTANTS.map(a => ({
-        label: a.name,
-        tag: a.role,
-        value: a.id,
-        description: a.description,
-        locked: a.locked,
-        lockReason: a.lockReason
-    }))
+    // Check subscription for locking
+    const userTier = authStore.user?.subscription_tier || 'free'
+    const canAccessAtlas = ['storyteller', 'architect', 'pro'].includes(userTier)
+
+    let modes = ASSISTANTS.map(a => {
+        let isLocked = a.locked
+        
+        // Unlock Atlas if tier is sufficient
+        if (a.id === 'narrative' && canAccessAtlas) {
+            isLocked = false
+        }
+
+        return {
+            label: a.name,
+            tag: a.role,
+            value: a.id,
+            description: a.description,
+            locked: isLocked,
+            lockReason: isLocked ? a.lockReason : undefined
+        }
+    })
 
     if (props.storyMode === 'journal') {
         return modes.filter(m => m.value === 'therapeutic')

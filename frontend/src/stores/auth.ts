@@ -23,6 +23,31 @@ export const useAuthStore = defineStore('auth', () => {
         }
     )
 
+    // Verify Session on Load
+    const fetchUser = async () => {
+        if (!token.value) return;
+        try {
+            const response = await axios.get('http://localhost:3001/api/auth/me');
+            if (response.data) {
+                // Merge existing user structure with new data to preserve other fields if any
+                const updatedUser = { ...user.value, ...response.data };
+                // Ensure subscription_tier is present
+                if (!updatedUser.subscription_tier) updatedUser.subscription_tier = 'free'; // Fallback
+
+                user.value = updatedUser;
+                localStorage.setItem('user', JSON.stringify(updatedUser)); // Update local storage
+            }
+        } catch (error) {
+            console.error('Failed to refresh user session:', error);
+            // Optionally logout if invalid? No, 401 interceptor handles that.
+        }
+    }
+
+    // Call on init
+    if (token.value) {
+        fetchUser();
+    }
+
     const login = async (credentials: any) => {
         try {
             const response = await axios.post('http://localhost:3001/api/auth/login', credentials)

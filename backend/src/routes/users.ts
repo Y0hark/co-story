@@ -95,11 +95,16 @@ router.get('/:id/stats', async (req, res) => {
         const { tier, usage } = await subscriptionService.getUsage(id);
 
         // Calculate limits and days remaining
+        // Calculate limits and days remaining
         const limits = {
             'free': 3000,
-            'tier1': 90000,
-            'tier2': 300000,
-            'tier3': 900000
+            'scribe': 90000,
+            'storyteller': 300000,
+            'architect': 900000,
+            'pro': 300000, // Legacy support
+            'tier1': 90000, // Legacy
+            'tier2': 300000, // Legacy
+            'tier3': 900000 // Legacy
         };
         const wordLimit = limits[tier as keyof typeof limits] || 3000;
 

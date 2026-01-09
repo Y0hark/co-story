@@ -11,15 +11,20 @@ export interface MonthlyUsage {
     chapters_free_extra: number;  // Legacy
 }
 
-export type UserTier = 'free' | 'tier1' | 'tier2' | 'tier3';
+export type UserTier = 'free' | 'scribe' | 'storyteller' | 'architect' | 'pro' | 'tier1' | 'tier2' | 'tier3';
 
 export class SubscriptionService {
 
-    private limits = {
-        'free': { wordLimit: 3000, listLimit: 1 },         // 1 chapter
-        'tier1': { wordLimit: 90000, listLimit: 5 },       // 30 chapters
-        'tier2': { wordLimit: 300000, listLimit: 20 },     // 100 chapters
-        'tier3': { wordLimit: 900000, listLimit: 9999 }    // 300 chapters (200 premium + 100 free)
+    private limits: Record<string, { wordLimit: number, listLimit: number }> = {
+        'free': { wordLimit: 3000, listLimit: 1 },
+        'scribe': { wordLimit: 90000, listLimit: 3 },
+        'storyteller': { wordLimit: 300000, listLimit: 9999 },
+        'architect': { wordLimit: 900000, listLimit: 9999 },
+        // Legacy Tiers
+        'pro': { wordLimit: 300000, listLimit: 9999 },
+        'tier1': { wordLimit: 90000, listLimit: 5 },
+        'tier2': { wordLimit: 300000, listLimit: 20 },
+        'tier3': { wordLimit: 900000, listLimit: 9999 }
     };
 
     /**

@@ -4,10 +4,24 @@
       <!-- Left Sidebar: Filters & Collections -->
       <aside class="w-full md:w-64 bg-white border-r border-stone-200 flex flex-col shrink-0 z-20">
           <div class="p-6 border-b border-stone-100">
-              <h1 class="text-2xl font-serif font-bold text-stone-900 mb-2">Library</h1>
+              <div class="flex items-center gap-2 mb-2">
+                  <h1 class="text-2xl font-serif font-bold text-stone-900">Library</h1>
+                  <span 
+                      v-if="stats?.subscription?.tier && stats.subscription.tier !== 'free'"
+                      class="px-2 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-bold border shadow-sm"
+                      :class="{
+                          'bg-emerald-50 text-emerald-700 border-emerald-200': stats.subscription.tier === 'scribe',
+                          'bg-indigo-50 text-indigo-700 border-indigo-200': stats.subscription.tier === 'storyteller',
+                          'bg-purple-50 text-purple-700 border-purple-200': stats.subscription.tier === 'architect',
+                          'bg-stone-100 text-stone-600 border-stone-200': stats.subscription.tier === 'pro'
+                      }"
+                  >
+                      {{ stats.subscription.tier }}
+                  </span>
+              </div>
               <p class="text-xs text-stone-500">Your curated collection of stories.</p>
           </div>
-
+          
           <nav class="flex-1 overflow-y-auto p-4 space-y-6">
               <!-- Main Filters -->
               <div class="space-y-1">
@@ -15,7 +29,7 @@
                   <button 
                     v-for="filter in filters" 
                     :key="filter.id"
-                    @click="activeFilter = filter.id"
+                    @click="selectFilter(filter.id)"
                     class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-3 group border border-transparent"
                     :class="activeFilter === filter.id ? 'bg-indigo-50 text-indigo-900 border-indigo-100' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'"
                   >
@@ -25,21 +39,29 @@
                   </button>
               </div>
 
-              <!-- Collections (Tags) -->
+              <!-- Collections (Lists) -->
               <div class="space-y-1">
                    <div class="px-3 flex items-center justify-between mb-2">
                         <h3 class="text-xs font-bold text-stone-400 uppercase tracking-widest">Collections</h3>
+                        <button 
+                            @click="createCollection"
+                            class="p-1 rounded hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+                            title="New Collection"
+                        >
+                            <Plus class="w-3 h-3" />
+                        </button>
                    </div>
-                   <div v-if="userTags.length === 0" class="px-3 text-xs text-stone-400 italic">No tags found.</div>
+                   <div v-if="lists.length === 0" class="px-3 text-xs text-stone-400 italic">No collections yet.</div>
                    <button 
-                    v-for="tag in userTags" 
-                    :key="tag"
-                    @click="toggleTag(tag)"
+                    v-for="list in lists" 
+                    :key="list.id"
+                    @click="selectList(list.id)"
                     class="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 group"
-                     :class="selectedTags.includes(tag) ? 'bg-indigo-50 text-indigo-900 font-medium' : 'text-stone-600 hover:bg-stone-50'"
+                     :class="selectedListId === list.id ? 'bg-indigo-50 text-indigo-900 font-medium' : 'text-stone-600 hover:bg-stone-50'"
                    >
-                    <span class="w-2 h-2 rounded-full border border-stone-300 group-hover:border-indigo-400" :class="selectedTags.includes(tag) ? 'bg-indigo-500 border-indigo-500' : 'bg-transparent'"></span>
-                    {{ tag }}
+                    <Folder class="w-3.5 h-3.5" :class="selectedListId === list.id ? 'text-indigo-500' : 'text-stone-400 group-hover:text-stone-500'" />
+                    {{ list.name }}
+                    <span class="ml-auto text-xs text-stone-300 group-hover:text-stone-400">{{ list.stories?.length || 0 }}</span>
                    </button>
               </div>
           </nav>
@@ -61,16 +83,32 @@
               </div>
 
               <div class="flex items-center gap-3">
-                  <select 
-                    v-model="sortBy" 
-                    class="bg-white border border-stone-200 text-stone-600 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2 outline-none cursor-pointer hover:border-stone-300"
-                  >
-                    <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-                  </select>
-                  <button class="p-2 text-stone-400 hover:text-stone-900 transition-colors rounded-lg hover:bg-stone-100">
-                      <LayoutGrid class="w-5 h-5" v-if="viewMode === 'list'" @click="viewMode = 'grid'" />
-                      <ListIcon class="w-5 h-5" v-else @click="viewMode = 'list'" />
-                  </button>
+                  <div class="relative group">
+                        <select 
+                            v-model="sortBy" 
+                            class="appearance-none bg-white border border-stone-200 text-stone-600 text-sm rounded-lg pl-3 pr-8 py-2 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none cursor-pointer hover:border-stone-300 shadow-sm transition-all font-medium"
+                        >
+                            <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                        </select>
+                        <ChevronDown class="w-4 h-4 text-stone-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:text-stone-600 transition-colors" />
+                  </div>
+                  
+                  <div class="flex bg-white border border-stone-200 rounded-lg p-0.5 shadow-sm">
+                        <button 
+                            class="p-1.5 rounded-md transition-all"
+                            :class="viewMode === 'grid' ? 'bg-stone-100 text-stone-800' : 'text-stone-400 hover:text-stone-600'"
+                            @click="viewMode = 'grid'"
+                        >
+                            <LayoutGrid class="w-4 h-4" />
+                        </button>
+                         <button 
+                            class="p-1.5 rounded-md transition-all"
+                            :class="viewMode === 'list' ? 'bg-stone-100 text-stone-800' : 'text-stone-400 hover:text-stone-600'"
+                            @click="viewMode = 'list'"
+                        >
+                            <ListIcon class="w-4 h-4" />
+                        </button>
+                  </div>
               </div>
           </div>
 
@@ -149,27 +187,73 @@
             </div>
         </div>
       </main>
+
+      <!-- Create Collection Modal -->
+      <BaseModal
+        :is-open="showCreateCollectionModal"
+        title="New Collection"
+        description="Create a new collection to organize your stories."
+        confirm-text="Create"
+        @close="showCreateCollectionModal = false"
+        @confirm="confirmCreateCollection"
+      >
+        <div class="mt-4">
+            <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Collection Name</label>
+            <input 
+                v-model="newCollectionName" 
+                type="text" 
+                class="w-full bg-stone-50 border-none rounded-lg focus:ring-2 focus:ring-indigo-500/20 text-stone-800 placeholder:text-stone-400 text-sm py-2.5 px-3 transition-all"
+                placeholder="e.g. Sci-Fi Ideas"
+                @keyup.enter="confirmCreateCollection"
+                autoFocus
+            />
+        </div>
+      </BaseModal>
+
+      <!-- Upgrade Modal -->
+      <BaseModal
+        :is-open="showUpgradeModal"
+        title="Limit Reached"
+        :description="`You've reached the collection limit for your current plan. Upgrade to unlock more collections and features.`"
+        confirm-text="Upgrade"
+        @close="showUpgradeModal = false"
+        @confirm="$router.push('/app/subscription')"
+      >
+        <div class="bg-indigo-50 rounded-lg p-4 mt-2 border border-indigo-100">
+            <div class="flex items-center gap-2 text-indigo-700 font-medium text-sm mb-1">
+                <Sparkles class="w-4 h-4" />
+                <span>Unlock Limitless Creativity</span>
+            </div>
+            <p class="text-xs text-indigo-600/80">
+                Get unlimited collections, advanced AI models, and more storage with our Pro plans.
+            </p>
+        </div>
+      </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import BaseModal from '../components/ui/BaseModal.vue'
 import { 
-    Library, BookOpen, Clock, CheckCircle, Heart, Search, LayoutGrid, List as ListIcon 
+    Library, BookOpen, Clock, CheckCircle, Heart, Search, LayoutGrid, List as ListIcon, ChevronDown, Plus, Sparkles, Folder
 } from 'lucide-vue-next'
 
 const router = useRouter()
-const USER_ID = '11111111-1111-1111-1111-111111111111'
+const authStore = useAuthStore()
 
 // State
+const lists = ref<any[]>([])
 const allStories = ref<any[]>([])
 const loading = ref(true)
 const searchQuery = ref('')
-const activeFilter = ref('all')
-const selectedTags = ref<string[]>([])
+const activeFilter = ref('all') // 'all', 'in_progress', 'finished', 'favorites'
+const selectedListId = ref<string | null>(null)
 const viewMode = ref<'grid' | 'list'>('grid')
 const sortBy = ref('recent')
+const stats = ref<any>(null)
 
 // Config
 const filters = computed(() => [
@@ -185,15 +269,6 @@ const sortOptions = [
     { label: 'Progress', value: 'progress' }
 ]
 
-const userTags = computed(() => {
-    const tags = new Set<string>()
-    allStories.value.forEach(s => {
-        if (s.genre) tags.add(s.genre)
-        if (s.tags) s.tags.forEach((t: string) => tags.add(t))
-    })
-    return Array.from(tags)
-})
-
 // Helpers
 const getProgress = (story: any) => {
     if (!story.total_chapters) return 0
@@ -207,12 +282,63 @@ const getProgressLabel = (story: any) => {
     return 'Not Started'
 }
 
-const toggleTag = (tag: string) => {
-    if (selectedTags.value.includes(tag)) {
-        selectedTags.value = selectedTags.value.filter(t => t !== tag)
-    } else {
-        selectedTags.value.push(tag)
+// Modal State
+const showCreateCollectionModal = ref(false)
+const showUpgradeModal = ref(false)
+const newCollectionName = ref('')
+
+const createCollection = () => {
+    // Check limits based on tier
+    const tier = stats.value?.subscription?.tier || 'free';
+    // User lists count (excluding "Saved" is common, but let's count all user created ones)
+    // The backend endpoint likely returns all lists including default ones if any.
+    const currentCount = lists.value.length;
+    
+    let limit = 1; // Free
+    if (tier === 'scribe') limit = 3;
+    if (tier === 'storyteller' || tier === 'architect' || tier === 'pro') limit = 999;
+    
+    if (currentCount >= limit) {
+        showUpgradeModal.value = true;
+        return;
     }
+    
+    newCollectionName.value = ''
+    showCreateCollectionModal.value = true
+}
+
+const confirmCreateCollection = async () => {
+    if (!newCollectionName.value.trim() || !authStore.user?.id) return;
+    
+    try {
+        const res = await fetch('http://localhost:3001/api/library/lists', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ userId: authStore.user.id, name: newCollectionName.value.trim() })
+        })
+        
+        if (res.ok) {
+            const newList = await res.json()
+            lists.value.push({ ...newList, stories: [] })
+            showCreateCollectionModal.value = false
+        }
+    } catch (e) {
+        console.error("Failed to create collection", e)
+    }
+}
+
+const selectList = (listId: string) => {
+    if (selectedListId.value === listId) {
+        selectedListId.value = null // toggle off
+    } else {
+        selectedListId.value = listId
+        activeFilter.value = '' // clear main filter if list selected
+    }
+}
+
+const selectFilter = (filterId: string) => {
+    activeFilter.value = filterId
+    selectedListId.value = null // clear list selection
 }
 
 const openReader = (story: any) => {
@@ -223,21 +349,32 @@ const openReader = (story: any) => {
 const fetchLibrary = async () => {
     try {
         loading.value = true
-        // Fetch all user lists and flatten stories
-        const res = await fetch(`http://localhost:3001/api/library/${USER_ID}`)
-        if (res.ok) {
-            const data = await res.json()
-            const flatStories = new Map()
-            if (Array.isArray(data)) {
-                 data.forEach((list: any) => {
-                     if (list.stories) {
-                         list.stories.forEach((s: any) => {
-                             if (!flatStories.has(s.id)) flatStories.set(s.id, s)
-                         })
-                     }
-                 })
+        
+        // Fetch Stats
+        if (authStore.user?.id) {
+            fetch(`http://localhost:3001/api/users/${authStore.user.id}/stats`)
+                .then(r => r.json())
+                .then(d => stats.value = d)
+                .catch(e => console.error("Stats fail", e))
+
+            // Fetch all user lists and flatten stories
+            const res = await fetch(`http://localhost:3001/api/library/${authStore.user.id}`)
+            if (res.ok) {
+                const data = await res.json()
+                lists.value = data;
+
+                const flatStories = new Map()
+                if (Array.isArray(data)) {
+                     data.forEach((list: any) => {
+                         if (list.stories) {
+                             list.stories.forEach((s: any) => {
+                                 if (!flatStories.has(s.id)) flatStories.set(s.id, s)
+                             })
+                         }
+                     })
+                }
+                allStories.value = Array.from(flatStories.values())
             }
-            allStories.value = Array.from(flatStories.values())
         }
     } catch (e) {
         console.error("Failed to load library", e)
@@ -250,21 +387,24 @@ const fetchLibrary = async () => {
 const filteredStories = computed(() => {
     let result = allStories.value
 
-    // Filter by Tab
-    if (activeFilter.value === 'in_progress') {
-        result = result.filter(s => getProgress(s) > 0 && getProgress(s) < 100)
-    } else if (activeFilter.value === 'finished') {
-         result = result.filter(s => getProgress(s) >= 100)
-    } else if (activeFilter.value === 'favorites') {
-        result = result.filter(s => s.is_liked)
-    }
-
-    // Filter by Tags
-    if (selectedTags.value.length > 0) {
-        result = result.filter(s => {
-            const sTags = [s.genre, ...(s.tags || [])]
-            return selectedTags.value.some(t => sTags.includes(t))
-        })
+    // 1. Filter by List Selection
+    if (selectedListId.value) {
+        const list = lists.value.find(l => l.id === selectedListId.value)
+        if (list) {
+            result = list.stories || []
+        } else {
+            result = []
+        }
+    } 
+    // 2. OR Filter by Tab (only if no list selected)
+    else {
+        if (activeFilter.value === 'in_progress') {
+            result = result.filter(s => getProgress(s) > 0 && getProgress(s) < 100)
+        } else if (activeFilter.value === 'finished') {
+             result = result.filter(s => getProgress(s) >= 100)
+        } else if (activeFilter.value === 'favorites') {
+            result = result.filter(s => s.is_liked)
+        }
     }
 
     // Search

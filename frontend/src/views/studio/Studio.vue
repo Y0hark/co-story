@@ -20,6 +20,28 @@
                     >
                         <ArrowLeft class="w-4 h-4" />
                     </button>
+                    <!-- Tier Badge (Mini) -->
+                    <span 
+                        v-if="stats?.subscription?.tier && stats.subscription.tier !== 'free'"
+                        class="px-1.5 py-0.5 rounded text-[8px] uppercase tracking-widest font-bold border shrink-0"
+                        :class="{
+                            'bg-emerald-50 text-emerald-700 border-emerald-200': stats.subscription.tier === 'scribe',
+                            'bg-indigo-50 text-indigo-700 border-indigo-200': stats.subscription.tier === 'storyteller',
+                            'bg-purple-50 text-purple-700 border-purple-200': stats.subscription.tier === 'architect',
+                            'bg-stone-100 text-stone-600 border-stone-200': stats.subscription.tier === 'pro'
+                        }"
+                    >
+                        {{ stats.subscription.tier[0] }}
+                    </span>
+                    <div v-if="stats?.subscription" class="ml-auto flex flex-col items-end" title="Monthly Word Usage">
+                        <span class="text-[8px] text-stone-400 font-mono">{{ (stats.subscription.wordsUsed || 0).toLocaleString() }} / {{ (stats.subscription.wordLimit || 0).toLocaleString() }}</span>
+                        <div class="w-12 h-1 bg-stone-100 rounded-full overflow-hidden mt-0.5">
+                            <div 
+                                class="h-full bg-indigo-500 rounded-full"
+                                :style="{ width: `${Math.min(100, ((stats.subscription.wordsUsed || 0) / (stats.subscription.wordLimit || 1)) * 100)}%` }"
+                            ></div>
+                        </div>
+                    </div>
                     <input 
                         v-if="story"
                         type="text" 
@@ -344,6 +366,7 @@
 import { ref, computed, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import MarkdownIt from 'markdown-it'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
 import axios from 'axios'
 import { Plus, Sparkles, List, PenTool, Globe, Feather, ArrowLeft, Trash2 } from 'lucide-vue-next'
 import Editor from '../../components/editor/Editor.vue'
@@ -430,6 +453,26 @@ const handleWorldUpdate = (items: any[]) => {
     worldItems.value = items
 }
 
+const stats = ref<any>(null)
+// Mock User ID (should be from auth used in dashboard)
+const authStore = useAuthStore()
+
+// Fetch stats for badge
+onMounted(() => {
+    if (authStore.user?.id) {
+        fetch(`http://localhost:3001/api/users/${authStore.user.id}/stats`)
+            .then(r => r.json())
+            .then(d => {
+                stats.value = d
+                if (d.subscription && d.subscription.tier && authStore.user) {
+                    // Force update tier in store so Atlas/AIChatPanel reacts
+                    (authStore.user as any).subscription_tier = d.subscription.tier
+                }
+            })
+            .catch(e => console.error("Stats fail", e))
+    }
+})
+
 import AIChatPanel from '@/components/studio/AIChatPanel.vue'
 
 // AI State
@@ -480,9 +523,7 @@ const aiContext = computed(() => {
         tone: story.value?.tone || null,
         summaryPreviousChapter,
         summaryRecentContext,
-        aiRole: story.value?.ai_role, // Pass persisted AI role
-        genre: story.value?.genre,
-        tone: story.value?.tone
+        aiRole: story.value?.ai_role // Pass persisted AI role
     }
 })
 

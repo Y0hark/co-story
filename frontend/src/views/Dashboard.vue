@@ -4,10 +4,23 @@
     <div class="bg-white border border-stone-200 rounded-xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow group">
         <div>
             <div class="flex items-center gap-2 mb-1">
-                <h2 class="text-xl font-bold font-serif text-stone-900">Novice Plan</h2>
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-600 uppercase tracking-widest border border-stone-200">Free</span>
+                <h2 class="text-xl font-bold font-serif text-stone-900 capitalize">{{ stats?.subscription?.tier || 'Novice' }} Plan</h2>
+                <span 
+                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest border"
+                    :class="[
+                        (stats?.subscription?.tier === 'free' || !stats?.subscription?.tier) 
+                            ? 'bg-stone-100 text-stone-600 border-stone-200' 
+                            : 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                    ]"
+                >
+                    {{ (stats?.subscription?.tier === 'free' || !stats?.subscription?.tier) ? 'Free' : 'Pro' }}
+                </span>
             </div>
-            <p class="text-stone-500 text-sm">Unlock more chapters and advanced AI models.</p>
+            <p class="text-stone-500 text-sm">
+                {{ (stats?.subscription?.tier === 'free' || !stats?.subscription?.tier) 
+                    ? 'Unlock more chapters and advanced AI models.' 
+                    : 'You have access to premium features.' }}
+            </p>
         </div>
         <button @click="$router.push('/app/subscription')" class="px-5 py-2.5 bg-stone-900 hover:bg-indigo-600 text-white rounded-lg text-sm font-bold shadow-sm transition-all transform hover:-translate-y-0.5 whitespace-nowrap hover-sketch">
             Upgrade Plan

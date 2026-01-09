@@ -1,14 +1,14 @@
 <template>
   <Transition name="modal">
     <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <!-- Backdrop -->
+      <!-- Trigger Backdrop -->
       <div class="absolute inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity" @click="close"></div>
       
       <!-- Modal Content -->
-      <div class="relative bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-stone-100 transform transition-all">
+      <div class="relative bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden border border-stone-100 transform transition-all">
         
         <!-- Header -->
-        <div class="px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex items-center justify-between">
+        <div class="px-6 py-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/50">
             <h3 class="text-lg font-serif font-bold text-stone-900">{{ title }}</h3>
             <button @click="close" class="text-stone-400 hover:text-stone-600 transition-colors p-1 rounded-full hover:bg-stone-100">
                 <X class="w-4 h-4" />
@@ -27,14 +27,14 @@
         <div class="px-6 py-4 bg-stone-50 flex justify-end gap-3">
             <button 
                 @click="close"
-                class="px-4 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-200/50 transition-colors"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors hover-sketch"
             >
                 {{ cancelText }}
             </button>
             <button 
                 @click="confirm"
-                class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm transition-all transform active:scale-95 flex items-center gap-2"
-                :class="isDestructive ? 'bg-red-500 hover:bg-red-600' : 'bg-teal-600 hover:bg-teal-700'"
+                class="px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm transition-all transform active:scale-95 flex items-center gap-2 hover-sketch"
+                :class="isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'"
             >
                 <Trash2 v-if="isDestructive" class="w-4 h-4" />
                 {{ confirmText }}
